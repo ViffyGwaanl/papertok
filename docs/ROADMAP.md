@@ -5,6 +5,8 @@
 ## 状态说明
 - **已落地**：Cloudflare Tunnel 公网入口 + Cloudflare Access 保护 `/admin*` 与 `/api/admin*`；后端 `X-Admin-Token` 双重校验。
 - **已修复**：公网/移动端同源加载（前端默认使用 `window.location.origin`；不再硬编码 `:8000`）。
+- **已落地**：前端 `API_BASE` 单点真理（`src/lib/apiBase.ts`），避免 WebView/同源/localhost 分叉。
+- **已验收**：iOS/Android Capacitor internal build 已在真机安装运行（本地 Xcode/Android Studio）。
 - **S0 安全收口完成**：
   - `GET /api/status` 变为公共摘要（不含本机路径/日志路径/敏感运维信息）
   - 新增 `GET /api/admin/status`（管理版）
@@ -33,6 +35,13 @@
 
 4) **MinerU warning 噪声治理**
 - 处理 `cv2` 与 `av` dylib duplicate class 警告，降低“神秘崩溃”风险
+
+5) **Internal 分发/打包（可选，但能显著降低安装成本）**
+- iOS：补一份“Archive → Export .ipa（Development）→ 安装”的 runbook（不等同于永久分发；Personal Team 仍会过期）
+- Android：输出 debug APK / release APK（签名与版本号策略），便于不依赖 Android Studio 安装
+- 若决定给多人分发：
+  - iOS：Apple Developer Program + TestFlight
+  - Android：Play 内测 / 直接分发 APK
 
 ---
 

@@ -10,6 +10,10 @@
 
 ---
 
+## 当前进度（已验收）
+- ✅ iOS：本地 Xcode 真机安装运行成功
+- ✅ Android：本地 Android Studio 真机安装运行成功
+
 ## 1) 推荐技术栈
 
 - Web：保持 React + Vite（现状）

@@ -53,12 +53,30 @@ npm run cap:open:ios
 ## 3) Android（Android Studio Run）
 
 步骤：
+
+### 3.1 首次安装 Android SDK（只需一次）
+1) Android Studio 弹窗提示 `Select SDKs` / `SDK Manager` 时：安装/勾选
+- Android SDK Platform：建议 Android 14（API 34）（可选再加 Android 13 / API 33）
+- Android SDK Build-Tools：34.x
+- Android SDK Platform-Tools（包含 `adb`，必装）
+- Android SDK Command-line Tools (latest)（推荐）
+
+2) 若遇到 `adb: command not found`：
+- 临时用完整路径（默认位置）：
+  - `~/Library/Android/sdk/platform-tools/adb devices`
+- 或永久加入 PATH（`~/.zshrc`）：
+  - `export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"`
+
+> 说明：你的 SDK 实际路径以 Android Studio 的 **Android SDK Location** 为准。
+
+### 3.2 导入工程并运行
 1) 手机打开 Developer options + USB debugging
 2) 打开 Android Studio：
 ```bash
 npm run cap:open:android
 ```
-3) 选择设备 → Run ▶
+3) 第一次导入工程时，`Importing 'android' Gradle Project` 可能需要 10–30 分钟（下载 Gradle/依赖属正常）。
+4) 选择设备 → Run ▶
 
 ---
 
@@ -77,5 +95,13 @@ npm run cap:open:android
 - 检查 iPhone 是否启用开发者模式
 
 ### 4.3 Android Gradle/SDK 问题
-- 用 Android Studio 的 SDK Manager 补齐组件
-- 首次 sync 较慢属正常
+- 用 Android Studio 的 SDK Manager 补齐组件（至少：API 34 Platform + Build-Tools + Platform-Tools）
+- 第一次 `Importing 'android' Gradle Project` / Gradle Sync 很慢属正常（下载依赖）
+
+### 4.4 `adb` 找不到
+- 先确认已安装：Android SDK Platform-Tools
+- 默认位置：`~/Library/Android/sdk/platform-tools/adb`
+- 终端临时验证：
+  - `~/Library/Android/sdk/platform-tools/adb devices`
+- 永久加入 PATH：把下面加入 `~/.zshrc`
+  - `export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"`

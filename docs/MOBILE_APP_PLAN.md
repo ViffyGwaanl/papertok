@@ -17,6 +17,10 @@
 
 > 这会直接影响工程实现：iOS/Android 对“局域网 HTTP”有平台安全策略（ATS / cleartext）需要明确处理，见第 3 章。
 
+**当前进度（已验收）**
+- ✅ Capacitor iOS/Android 工程已生成并提交
+- ✅ 已在本地 Xcode / Android Studio 真机安装运行成功
+
 ---
 
 ## 1) 目标与范围

@@ -141,3 +141,12 @@
   - `npm run cap:sync:android` / `cap:open:android`
 - 前端实现 `API_BASE` 单点真理：`src/lib/apiBase.ts`，避免 WebView 环境 base 计算分叉
 - 新增 runbook：`docs/APP_INTERNAL_RUNBOOK.md`
+
+---
+
+## 16) 真机验收：iOS/Android 均已在本地成功安装运行
+- iOS：本地 Xcode（Personal Team）成功 Run 并安装到 iPhone（internal build）
+- Android：本地 Android Studio 成功导入 Gradle 工程、安装并运行到真机
+- 经验记录（写入 runbook，便于复现/交接）：
+  - Android Studio 首次导入会提示安装 SDK（API Platform/Build-Tools/Platform-Tools）
+  - `adb: command not found` 通常是 Platform-Tools 未装或 PATH 未配置

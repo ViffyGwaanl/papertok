@@ -2,6 +2,8 @@
 
 > 目标：用 **Capacitor** 把现有 React/Vite 前端打包成 Android App（Internal Build），
 > **只使用公网域名** `https://papertok.app-so.com`，不做 LAN 直连（避免 Android cleartext/networkSecurityConfig 复杂度）。
+>
+> **当前状态**：✅ 已在本地 Android Studio 真机安装运行成功（internal build）。
 
 ---
 
