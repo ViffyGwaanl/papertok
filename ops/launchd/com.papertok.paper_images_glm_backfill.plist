@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.papertok.paper_images_glm_backfill</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>/Users/gwaanl/.openclaw/workspace/papertok/ops/run_paper_images_glm_backfill.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/gwaanl/.openclaw/workspace/papertok/backend</string>
+
+    <!-- One-shot agent (manual): do NOT auto-run on login/reboot. Use kickstart to run. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/gwaanl/.openclaw/workspace/papertok/data/logs/paper_images_glm_backfill.launchd.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/gwaanl/.openclaw/workspace/papertok/data/logs/paper_images_glm_backfill.launchd.err.log</string>
+  </dict>
+</plist>

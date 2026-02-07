@@ -1,0 +1,21 @@
+# Optional heavy deps for PDF -> (md + images) via mineru
+# Install with:
+#   source .venv/bin/activate
+#   pip install -r requirements.mineru.txt
+
+mineru==2.7.5
+# mineru runtime deps that are sometimes missing on macOS
+
+torch --index-url https://download.pytorch.org/whl/cpu
+
+doclayout-yolo==0.0.4
+ultralytics
+
+tokenizers
+transformers
+
+shapely
+pyclipper
+omegaconf
+
+dill

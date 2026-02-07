@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.papertok.server</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>/Users/gwaanl/.openclaw/workspace/papertok/ops/run_server.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/gwaanl/.openclaw/workspace/papertok/backend</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/gwaanl/.openclaw/workspace/papertok/data/logs/server.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/gwaanl/.openclaw/workspace/papertok/data/logs/server.err.log</string>
+  </dict>
+</plist>

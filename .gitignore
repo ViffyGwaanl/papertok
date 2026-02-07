@@ -1,0 +1,28 @@
+# macOS
+**/.DS_Store
+
+# secrets
+.env
+backend/.env
+
+# python
+backend/.venv/
+**/__pycache__/
+*.pyc
+
+# data
+data/db/*.sqlite
+data/raw/
+data/mineru/
+data/thumbs/
+data/logs/
+data/gen_images/
+data/gen_images_glm/
+data/jobs/
+# marker files / local state
+data/.*
+
+# frontend
+**/node_modules/
+**/dist/
+**/.env.local
