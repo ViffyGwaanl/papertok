@@ -10,11 +10,15 @@
 ## 当前已经做了什么（现状）
 - ✅ FastAPI + SQLite（SQLModel）后端
 - ✅ 同源单服务：后端托管前端 `dist/`，避免前后端分开导致的黑屏/跨域/localhost 问题
+- ✅ 公网入口（无 VPS）：Cloudflare Tunnel → `https://papertok.app-so.com/`
+- ✅ Zero Trust：Cloudflare Access 保护 `/admin*` 与 `/api/admin*`（仅允许指定邮箱）
 - ✅ API：
   - `GET /healthz`
   - `GET /api/papers/random?limit=20`（默认全历史；支持 `day=latest` 或 `day=YYYY-MM-DD`）
   - `GET /api/papers/{id}`（弹窗详情：讲解/原文 MD/图片+图注/PDF/生成图）
-  - `GET /api/status`（状态/计数/缺失列表/按 provider 的生图覆盖/最近失败摘要）
+  - `GET /api/status`（公共摘要：状态/覆盖率/聚合计数；不含本机路径/日志路径等敏感运维信息）
+  - `GET /api/public/status`（同上，显式别名）
+  - `GET /api/admin/status`（管理版详细状态：需要 `X-Admin-Token`，且建议由 Cloudflare Access 保护）
   - `GET /api/admin/config` + `PUT /api/admin/config`（DB 配置；配合 `/admin` 页面）
 - ✅ Pipeline（脚本 `backend/scripts/daily_run.py`）：
   - HF Daily 当天 Top10 入库（只处理 Top10，但历史会累积保留）
@@ -24,6 +28,7 @@
   - 图片图注：对 MinerU 抽取图片做 VLM caption（缓存到 `image_captions_json`）
   - 杂志拼贴图：Seedream / GLM-Image 生成 3 张/篇（`paper_images` 表 + `/static/gen` & `/static/gen_glm`），首页卡片支持横向轮播
 - ✅ PWA 的 Service Worker 已修：打开 `/static/*` 不会被错误 fallback 到首页
+- ✅ 移动端/公网同源加载修复：前端默认使用 `window.location.origin` 访问 API（不再硬编码 `:8000`）
 - ✅ 移除弹窗“PDF(本地)”入口（保留 arXiv PDF）
 
 ## 后续计划做什么（Roadmap）
@@ -82,6 +87,7 @@ ipconfig getifaddr en1  # Wi‑Fi
 > - 确认手机和 Mac 在同一个局域网、路由器没有“AP/客户端隔离”
 > - macOS 防火墙可能会拦截 Python/uvicorn 的入站连接（系统弹窗允许即可）
 > - 端口被占用时可用：`launchctl kickstart -k gui/$(id -u)/com.papertok.server`
+> - 如果页面一直 Loading/图片不出：可能是 PWA/Service Worker 缓存，试试无痕窗口或 URL 加 `?v=3` 强制刷新
 
 
 > 说明：如果 dist 不存在，后端仍可用（API 正常），但 `/` 会提示先 build 前端。
@@ -89,6 +95,8 @@ ipconfig getifaddr en1  # Wi‑Fi
 ## 快速开始（开发模式：前后端分开跑）
 - 后端：同上（8000）
 - 前端：`cd frontend/wikitok/frontend && npm run dev -- --host 127.0.0.1 --port 5173`
+
+> 说明：前端默认会在“localhost dev server”场景下把 API 指到 `http://localhost:8000`；在生产/隧道场景下默认走同源 `window.location.origin`。
 
 运行一次每日任务（手动，模式 C）：
 ```bash

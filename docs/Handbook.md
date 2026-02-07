@@ -1,6 +1,6 @@
 # PaperTok Handbook（工程化说明书）
 
-> 版本：2026-02-07（以仓库代码为准）
+> 版本：2026-02-07（持续更新；涵盖：Cloudflare Tunnel/Access 公网入口、移动端同源加载修复等）
 
 ## 1) 总体概览
 
@@ -155,12 +155,15 @@ bash ops/run_daily.sh
   - 详情包含 `content_explain_cn`、`raw_markdown_url`、抽取图片、图注、两家生成图
 
 ### 6.3 状态与运维观测
-- `GET /api/status`
-  - 论文各阶段覆盖率
-  - `paper_images` 按 provider 统计
-  - `paper_events` 的 failed/skipped 汇总 + 最近列表
-  - Jobs 汇总（by_status / running）
-  - pipeline 当前 env 开关快照（便于解释“为什么没跑”）
+- **Public（可公开）**
+  - `GET /api/status`（公共摘要；不含本机路径/日志路径/运维细节）
+  - `GET /api/public/status`（同上，显式命名的别名）
+
+- **Admin（仅管理面）**
+  - `GET /api/admin/status`（完整运维视图；需要 `X-Admin-Token` 且建议由 Cloudflare Access 保护）
+
+公共摘要包含：覆盖率、聚合计数、pipeline 开关快照、按 provider 的生图统计等；
+管理视图额外包含：recent_failed 列表、log_path、running jobs 等敏感运维信息。
 
 ### 6.4 Admin（需要可选 token）
 - `GET/PUT /api/admin/config`
@@ -258,6 +261,25 @@ bash ops/launchd/prune_optional.sh
 ### 10.3 Admin Token
 - 若设置 `PAPERTOK_ADMIN_TOKEN`，则 `/api/admin/*` 与 `/api/admin/jobs/*` 必须带 `X-Admin-Token`
 
+### 10.4 公网发布的推荐安全组合（Cloudflare Tunnel + Access）
+当你用 Cloudflare Tunnel 把服务暴露到公网时，推荐采用“分层防护”（Defense in Depth）：
+
+1) **主站公开 / 只保护 Admin**（推荐的默认姿势）
+- `.env`：
+  - `PAPERTOK_ALLOWED_CIDRS=*`（不限制主站 IP）
+  - `PAPERTOK_ADMIN_TOKEN=...`（强制 Admin API header）
+- Cloudflare Access：
+  - 保护 `papertok.app-so.com/admin*`（Admin UI）
+  - 保护 `papertok.app-so.com/api/admin*`（Admin API）
+  - 策略仅允许你的邮箱（如 `qq983929606@gmail.com`）
+
+2) **继续启用 IP allowlist（更严格）**
+- 若你仍希望用 IP allowlist（例如只允许自己公司的出口 IP），并且前面有 Cloudflare 代理：
+  - 设置 `PAPERTOK_TRUST_X_FORWARDED_FOR=1`
+  - 并把 `PAPERTOK_ALLOWED_CIDRS` 设为你想允许的公网/内网网段
+
+> 说明：Cloudflare Access 负责“谁能进来”，`X-Admin-Token` 负责“即使进来了也要再验一次”。两者叠加很稳。
+
 ---
 
 ## 11) 故障排查 Runbook
@@ -275,12 +297,28 @@ bash ops/launchd/prune_optional.sh
 - 打开 `.env`：确保 `MINERU_REPAIR_ON_FAIL=1` 且 `MINERU_REPAIR_TOOL=auto|qpdf`
 - 通过 Admin → `paper_retry_stage` 重试 `mineru`（会触发 repair-on-fail）
 
-### 11.3 Admin 页面更新不生效（PWA/SW 缓存）
-- 用无痕窗口打开 `/admin`
-- 或清理站点数据 / 重新安装到桌面
+### 11.3 页面更新不生效（PWA / Service Worker 缓存）
+现象：你明明已经更新了代码，但手机端仍在用旧 JS/CSS，于是出现“Loading 转圈/图片不出/弹窗不出”等。
+
+处理顺序（从轻到重）：
+1) 用无痕窗口打开（最常用）：`/` 或 `/admin`
+2) URL 加版本号强制刷新：`https://papertok.app-so.com/?v=3`（随便换个数字即可）
+3) iOS：设置 → Safari → 高级 → 网站数据 → 删除 `papertok.app-so.com`
+4) 如果是“添加到主屏幕”的 PWA：删除桌面图标后重新添加
 
 ### 11.4 worker job 卡住 running
 - 当前做法：避免 kickstart -k 杀进程；worker 内也有 stale 处理（如果你再遇到可继续增强）
+
+### 11.5 S0 安全回归检查（上线/改动后必跑）
+运行：
+```bash
+cd papertok
+./ops/security_smoke.sh
+```
+它会验证：
+- Cloudflare Access 仍然保护 `/admin*` 与 `/api/admin*`
+- 本机直连 `/api/admin/*` 没有 `X-Admin-Token` 必须 401
+- 公网 `/api/status` 与 `/api/papers/{id}` 不泄露 `/Users/...`、`log_path` 等敏感信息
 
 ---
 

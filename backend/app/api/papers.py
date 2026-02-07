@@ -277,7 +277,7 @@ def get_paper_detail(paper_id: int):
         "content_explain_cn": paper.content_explain_cn,
         "pdf_url": paper.pdf_url,
         "pdf_local_url": pdf_local_url,
-        "raw_text_path": paper.raw_text_path,
+        # raw_text_path is an internal absolute path on disk; do not expose publicly.
         "raw_markdown_url": raw_markdown_url,
         "images": images,
         "image_captions": image_captions,

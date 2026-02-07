@@ -2,7 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ||
-  `${window.location.protocol}//${window.location.hostname}:8000`;
+  (() => {
+    // Prod / tunnel: backend serves frontend and API on the same origin (no :8000)
+    // Local dev: if the frontend is not served from :8000, default API to :8000.
+    const { protocol, hostname, port } = window.location;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    if (isLocalhost && port && port !== '8000') {
+      return `${protocol}//${hostname}:8000`;
+    }
+    return window.location.origin;
+  })();
 
 type AdminConfigResp = {
   defaults: Record<string, any>;
@@ -62,7 +71,7 @@ export function AdminPage() {
     try {
       const [rCfg, rStatus, rJobs, rMeta] = await Promise.all([
         fetch(`${API_BASE}/api/admin/config`, { headers }),
-        fetch(`${API_BASE}/api/status`),
+        fetch(`${API_BASE}/api/admin/status`, { headers }),
         fetch(`${API_BASE}/api/admin/jobs`, { headers }),
         fetch(`${API_BASE}/api/admin/jobs/worker_logs/meta`, { headers }),
       ]);
@@ -73,7 +82,7 @@ export function AdminPage() {
       }
       if (!rStatus.ok) {
         const t = await rStatus.text();
-        throw new Error(`status HTTP ${rStatus.status}: ${t}`);
+        throw new Error(`admin status HTTP ${rStatus.status}: ${t}`);
       }
       if (!rJobs.ok) {
         const t = await rJobs.text();

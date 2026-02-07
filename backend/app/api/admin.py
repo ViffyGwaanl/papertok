@@ -11,6 +11,7 @@ from app.services.app_config import (
     get_effective_app_config,
     set_db_app_config,
 )
+from app.services.status_service import get_status_snapshot
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -47,6 +48,14 @@ def get_config(request: Request, session: Session = Depends(get_session)):
             "editable": list(defaults.keys()),
         },
     }
+
+
+@router.get("/status")
+def get_admin_status(request: Request, limit: int = 50):
+    """Admin-only status snapshot (includes sensitive operational details)."""
+
+    _require_admin(request)
+    return get_status_snapshot(limit=limit, include_sensitive=True)
 
 
 @router.put("/config")

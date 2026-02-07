@@ -17,6 +17,13 @@
 11. [故障排查 Runbook](./Handbook.md#11-故障排查-runbook)
 12. [项目历史 / 已完成工作清单](./HISTORY.md)
 13. [Roadmap（未来计划）](./ROADMAP.md)
+14. [多平台兼容计划（Server + Windows）](./PLATFORM_PLAN.md)
+15. [公网发布方案（本地 Mac mini 重算力 + 公网 VPS 入口）](./PUBLIC_INGRESS_PLAN.md)
+16. [Cloudflare Tunnel 优先：无 VPS 先上线公网](./CLOUDFLARE_TUNNEL_PLAN.md)
+17. [移动端 App 计划（iOS/Android：PWA → Capacitor → 可选原生重写）](./MOBILE_APP_PLAN.md)
+18. [移动端 App 实施方案（Internal Build）](./MOBILE_APP_IMPLEMENTATION.md)
+19. [app-so.com 上线步骤（Cloudflare Tunnel，无 VPS）](./DEPLOY_APP_SO_COM_CLOUDFLARE.md)
+20. [安全模型（Defense in Depth）](./SECURITY.md)
 
 ---
 

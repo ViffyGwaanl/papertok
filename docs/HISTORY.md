@@ -95,3 +95,34 @@
 - `/api/status` 增强：增加 jobs 汇总、pipeline 配置快照、recent_skipped
 - 前端：Admin 页面可滚动（全站 `body overflow hidden` 下的兼容修复）
 - 去掉 `@vercel/analytics` 噪声，并对 `/_vercel/insights/*` 增加 silence route
+
+---
+
+## 11) 公网入口（Cloudflare Tunnel，无 VPS）
+- 在 Mac mini 上配置 Cloudflare Tunnel（cloudflared）把本机 `127.0.0.1:8000` 暴露为公网 HTTPS：`https://papertok.app-so.com`
+- 主站 `/` 保持公开访问
+
+---
+
+## 12) Cloudflare Access（Zero Trust）保护 Admin UI + Admin API
+- 创建可重用策略（仅允许指定邮箱）
+- 自托管应用拆分为两条路径并绑定同一策略：
+  - `papertok.app-so.com/admin*`
+  - `papertok.app-so.com/api/admin*`
+- 叠加后端 `X-Admin-Token`（`PAPERTOK_ADMIN_TOKEN`）作为第二道门
+
+---
+
+## 13) 移动端/公网同源加载修复（前端）
+- 统一前端 API_BASE 策略：生产/隧道环境默认使用 `window.location.origin`；仅在 localhost 开发时 fallback 到 `:8000`
+- 移除“等待图片预加载完成才渲染”的阻塞逻辑，避免移动网络下单张图片卡住导致一直 Loading
+
+---
+
+## 14) S0 安全收口（信息泄露治理 + public/admin status 分离）
+- `GET /api/papers/{id}` 不再返回本机绝对路径字段（如 `raw_text_path`）
+- `GET /api/status` 改为“公共摘要”（不包含 `/Users/...`、`log_path`、jobs 列表等敏感运维信息）
+- 新增：
+  - `GET /api/public/status`（公共摘要别名）
+  - `GET /api/admin/status`（管理版详细 status，需 `X-Admin-Token` 且由 Cloudflare Access 保护）
+- 新增 `ops/security_smoke.sh`：对 Access gating + token enforcement + 信息泄露关键字进行回归检测
