@@ -28,7 +28,10 @@
   - 图片图注：对 MinerU 抽取图片做 VLM caption（缓存到 `image_captions_json`）
   - 杂志拼贴图：Seedream / GLM-Image 生成 3 张/篇（`paper_images` 表 + `/static/gen` & `/static/gen_glm`），首页卡片支持横向轮播
 - ✅ PWA 的 Service Worker 已修：打开 `/static/*` 不会被错误 fallback 到首页
+- ✅ Capacitor 构建模式（`vite build --mode capacitor`）默认禁用 PWA/SW，避免 WebView 缓存干扰
 - ✅ 移动端/公网同源加载修复：前端默认使用 `window.location.origin` 访问 API（不再硬编码 `:8000`）
+- ✅ iOS/Android（Internal Build）骨架已落地：Capacitor 工程（`frontend/wikitok/frontend/ios` + `android`）已提交；阶段 1 先只用公网 `https://papertok.app-so.com`（见 `docs/APP_INTERNAL_RUNBOOK.md`）
+- ✅ 前端 `API_BASE` 单点真理：`frontend/wikitok/frontend/src/lib/apiBase.ts`
 - ✅ 移除弹窗“PDF(本地)”入口（保留 arXiv PDF）
 
 ## 后续计划做什么（Roadmap）

@@ -126,3 +126,18 @@
   - `GET /api/public/status`（公共摘要别名）
   - `GET /api/admin/status`（管理版详细 status，需 `X-Admin-Token` 且由 Cloudflare Access 保护）
 - 新增 `ops/security_smoke.sh`：对 Access gating + token enforcement + 信息泄露关键字进行回归检测
+
+---
+
+## 15) iOS/Android App（Capacitor，Internal Build）工程化落地
+- 在 `frontend/wikitok/frontend/` 初始化 Capacitor，并提交原生工程目录：
+  - `ios/`（SPM，无需 CocoaPods）
+  - `android/`
+- 新增 Capacitor 构建模式：`vite build --mode capacitor`
+  - 使用 `.env.capacitor` 注入 `VITE_API_BASE=https://papertok.app-so.com`（阶段 1：仅公网）
+  - `mode=capacitor` 时禁用 PWA（避免 WebView 下 Service Worker 缓存干扰）
+- 新增脚本：
+  - `npm run cap:sync:ios` / `cap:open:ios`
+  - `npm run cap:sync:android` / `cap:open:android`
+- 前端实现 `API_BASE` 单点真理：`src/lib/apiBase.ts`，避免 WebView 环境 base 计算分叉
+- 新增 runbook：`docs/APP_INTERNAL_RUNBOOK.md`

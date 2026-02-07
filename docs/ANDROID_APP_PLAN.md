@@ -47,6 +47,8 @@
 
 ## 2) 工程实现（本阶段已采用的约定）
 
+补充：前端已实现 `API_BASE` 单点真理（`src/lib/apiBase.ts`），避免 WebView 环境出现 base 计算分叉。
+
 - Capacitor 项目目录：`papertok/frontend/wikitok/frontend/`
 - Android 工程目录（提交到 git，便于协作）：`papertok/frontend/wikitok/frontend/android/`
 - 构建模式：`vite build --mode capacitor`

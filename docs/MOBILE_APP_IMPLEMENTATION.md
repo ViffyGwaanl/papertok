@@ -21,9 +21,11 @@
 
 ---
 
-## 2) 仓库结构建议（最小改动）
+## 2) 仓库结构（已落地）
 
-在 `papertok/frontend/wikitok/frontend/` 下新增 `capacitor/`（或直接在该目录初始化 Capacitor）。
+Capacitor 工程已直接初始化在 `papertok/frontend/wikitok/frontend/`，并提交原生工程目录：
+- `ios/`
+- `android/`
 
 理由：
 - Vite build 产物已经在这里（dist）
@@ -31,19 +33,23 @@
 
 ---
 
-## 3) API Base（公网 + LAN）实现建议
+## 3) API Base（单点真理，阶段 1：仅公网 HTTPS）
 
-### 3.1 前端环境变量
-新增：
-- `VITE_API_BASE_PUBLIC`（必填）：`https://papertok.<domain>`
-- `VITE_API_BASE_LAN`（可选）：`http://<LAN-IP>:8000` 或 `http://papertok.lan:8000`
+### 3.1 单点真理模块（已落地）
+- `src/lib/apiBase.ts`：前端唯一的 `API_BASE` 来源（Single Source of Truth）
+- `apiUrl('/api/...')` / `assetUrl('/static/...')`：统一拼接路径
 
-并在代码中实现：
-- 并发探测：
-  - `GET /healthz`
-  - `GET /api/status`（public 摘要；避免“健康但业务不可用”误判）
-- 优先 LAN，失败再 fallback 到 PUBLIC
-- 支持手动覆盖（Preferences/localStorage）
+### 3.2 阶段 1（当前）：仅公网 HTTPS
+- 使用单一变量：`VITE_API_BASE=https://papertok.<domain>`
+- 仓库已提供：`frontend/wikitok/frontend/.env.capacitor`（Capacitor 构建时读取）
+
+> 备注：Capacitor WebView 的 origin 通常是 `capacitor://localhost`，因此必须显式配置 `VITE_API_BASE`。
+
+### 3.3 阶段 2（可选）：加入 LAN
+后续如果要 LAN 直连，再在 `apiBase.ts` 上扩展：
+- LAN/PUBLIC 探测（healthz + public /api/status + 可选 /api/papers/random）
+- 手动覆盖（Preferences/localStorage）
+- iOS ATS / Android cleartext 合规配置
 
 ### 3.2 iOS/Android 明文 HTTP 的合规处理（如果选 HTTP 直连）
 

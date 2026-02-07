@@ -61,24 +61,19 @@
 
 ## 3) 工程改造点（为稳定性/可维护性）
 
-### 3.1 单点 API Base（单一事实源）
+### 3.1 单点 API Base（单一事实源）（已落地）
 
-目的：避免再次出现“部分页面/弹窗/图片走错 base 导致加载失败”。
+为避免再次出现“部分页面能看、弹窗/图片加载失败”的局部故障，前端已实现单点真理：
+- `src/lib/apiBase.ts`：统一导出 `API_BASE` 与 `apiUrl()`
+- 关键模块（feed、详情、Admin）均已改为从该模块取 base
 
-实施建议：
-- 新增 `src/lib/apiBase.ts`：统一导出 `API_BASE`（默认 `window.location.origin`；Capacitor 环境下使用配置的 public base）
-- 统一改造：`useWikiArticles.ts`、`WikiCard.tsx`、`AdminPage.tsx` 的 API_BASE 来源（本阶段可先不动 AdminPage）
+本阶段仅公网：`VITE_API_BASE=https://papertok.app-so.com`（见 `.env.capacitor`）。
 
-> 说明：本阶段只用公网，API_BASE 可以固定为 `https://papertok.app-so.com`（通过 env 注入）。
-
-### 3.2 处理 Service Worker（Capacitor 环境）
+### 3.2 处理 Service Worker（Capacitor 环境）（已落地）
 
 风险：WebView + SW 可能导致“缓存黏住旧 JS/CSS”，出现 Loading/图片不出等。
 
-建议：Capacitor build 默认 **禁用 SW 注册**（Web/PWA 仍可保留）。
-
-实现方式（建议其一）：
-- 在 `registerSW.js` 或入口处判断 Capacitor 环境（例如 `window.Capacitor` 存在）则不注册
+当前实现：`vite build --mode capacitor` 时禁用 PWA（见 `vite.config.ts`），从而避免在 Capacitor 环境引入 Service Worker 缓存干扰；Web 端仍保留 PWA。
 
 ---
 

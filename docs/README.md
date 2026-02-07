@@ -24,8 +24,9 @@
 18. [移动端 App 实施方案（Internal Build）](./MOBILE_APP_IMPLEMENTATION.md)
 19. [iOS App 计划（阶段 1：仅公网 HTTPS）](./IOS_APP_PLAN.md)
 20. [Android App 计划（阶段 1：仅公网 HTTPS）](./ANDROID_APP_PLAN.md)
-21. [app-so.com 上线步骤（Cloudflare Tunnel，无 VPS）](./DEPLOY_APP_SO_COM_CLOUDFLARE.md)
-22. [安全模型（Defense in Depth）](./SECURITY.md)
+21. [App 内部安装指南（iOS/Android，本地签名/运行）](./APP_INTERNAL_RUNBOOK.md)
+22. [app-so.com 上线步骤（Cloudflare Tunnel，无 VPS）](./DEPLOY_APP_SO_COM_CLOUDFLARE.md)
+23. [安全模型（Defense in Depth）](./SECURITY.md)
 
 ---
 

@@ -11,9 +11,9 @@
 - 分发方式：**内部安装**（iOS 走 TestFlight / 内测；Android 直接 APK 或内测渠道）
 - 登录：**暂不需要**（未来可能增加账号体系）
 - 推送：**不需要**
-- 网络：App 同时支持
-  - 公网域名（Cloudflare）：`https://papertok.<domain>`
-  - 局域网直连（更快）：`http://<LAN-IP>:8000` 或局域网域名
+- 网络：分阶段推进（先快后稳）
+  - **阶段 1（当前已决定）**：仅公网 HTTPS（Cloudflare）：`https://papertok.<domain>`
+  - **阶段 2（后续可选）**：再加入局域网直连（用于本地测试/更快）：`http://<LAN-IP>:8000` 或局域网域名
 
 > 这会直接影响工程实现：iOS/Android 对“局域网 HTTP”有平台安全策略（ATS / cleartext）需要明确处理，见第 3 章。
 
@@ -84,19 +84,27 @@
 ## 3) 架构与工程改造点
 
 ### 3.1 API Base 统一与环境切换（公网 + 局域网）
-你要求 App 同时支持公网域名与局域网直连，因此我们需要一个**可控且可诊断**的 API base 选择策略。
 
-建议实现（MVP）：
-- 前端支持两个环境变量：
-  - `VITE_API_BASE_PUBLIC=https://papertok.<domain>`
-  - `VITE_API_BASE_LAN=http://<LAN-IP>:8000`（可选）
-- 启动时做快速探测：并发请求 `GET /healthz`（超时 300~800ms），优先选 LAN，失败再 fallback 到 PUBLIC。
-- 额外建议：把 `GET /api/status`（public 摘要）作为第二探测点，避免出现“健康但业务不可用”的误判。
-- 提供一个“网络诊断/切换页”（仅 internal/debug build）：
-  - 显示当前 base（LAN/PUBLIC）
-  - 一键测试 `/healthz`、`/api/status`（public 摘要）
-  - 可选：测试 `/api/papers/random`（更贴近真实流量）
-  - 手动强制选择（写入本地存储，便于排障）
+**结论：必须做“单点真理”（Single Source of Truth）**，否则很容易出现“主页能看、弹窗/图片加载不了”的局部故障。
+
+当前实现现状：
+- 前端已新增单点模块：`src/lib/apiBase.ts`
+- Feed / 详情弹窗 / Admin（如启用）都应从该模块获取 `API_BASE` 并用 `apiUrl()` 拼接。
+
+接下来如果要支持 LAN，再在该模块基础上扩展探测/切换逻辑。
+
+建议实现（分两阶段）：
+
+- **阶段 1（当前）仅公网 HTTPS**
+  - 使用单一变量：`VITE_API_BASE=https://papertok.<domain>`
+  - Capacitor 构建用 `vite build --mode capacitor`，并读取 `.env.capacitor`（仓库已提供）
+
+- **阶段 2（可选）加入 LAN**
+  - 在 `src/lib/apiBase.ts` 中加入：LAN/PUBLIC 探测 + 手动覆盖
+  - 建议探测点：
+    - `GET /healthz`
+    - `GET /api/status`（public 摘要）
+    - 可选：`GET /api/papers/random`（真实业务）
 
 注意（平台差异）：
 - iOS 默认会阻止非 HTTPS（ATS）。如果要用 `http://<LAN-IP>`：
@@ -136,7 +144,7 @@
 ## 4) 里程碑计划（WBS）
 
 ### Phase 0 — 需求澄清（完成）
-已确认：内部安装、无登录、无推送、公网+局域网同时支持。
+已确认：内部安装、无登录、无推送；**先只用公网 HTTPS 跑通 iOS/Android**，再视需要引入局域网直连。
 
 仍需补充 2 个工程决策（会影响实现复杂度）：
 1) 局域网直连你希望用：
