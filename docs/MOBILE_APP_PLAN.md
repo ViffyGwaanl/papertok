@@ -77,7 +77,7 @@
 
 适合：产品成熟后、明确需要强原生能力时再做。
 
-> **推荐路径**：A（完善 PWA）→ B（Capacitor 上架）→ 视情况再考虑 C。
+> **推荐路径**：A（完善 PWA）→ B（Capacitor internal build，先只用公网 HTTPS 跑通）→（可选）LAN 直连 → 上架准备。
 
 ---
 
