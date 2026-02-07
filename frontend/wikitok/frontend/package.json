@@ -9,6 +9,8 @@
     "build:capacitor": "tsc -b && vite build --mode capacitor",
     "cap:sync:ios": "npm run build:capacitor && npx cap sync ios",
     "cap:open:ios": "npx cap open ios",
+    "cap:sync:android": "npm run build:capacitor && npx cap sync android",
+    "cap:open:android": "npx cap open android",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -24,6 +26,7 @@
     "tailwindcss": "^4.0.3"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.0.2",
     "@capacitor/cli": "^8.0.2",
     "@capacitor/core": "^8.0.2",
     "@capacitor/ios": "^8.0.2",

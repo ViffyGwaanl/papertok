@@ -60,27 +60,24 @@ Android：
 
 ## 4) Capacitor MVP 实施步骤（概要）
 
-> 具体命令会在你确定 iOS/Android 的包名、以及 LAN 访问策略后补齐。
+> 现状：iOS/Android 工程已在远程机器生成并提交到仓库，便于你在本地直接用 Xcode / Android Studio 安装到真机。
 
-1) 初始化 Capacitor
-- `npm i -D @capacitor/core @capacitor/cli`
-- `npx cap init`（设置 appName / appId）
+1) 安装依赖
+- `npm i -D @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android`
 
-2) 添加平台
-- `npm i -D @capacitor/ios @capacitor/android`
-- `npx cap add ios`
-- `npx cap add android`
+2) 统一构建（仅公网 HTTPS）
+- `npm run build:capacitor`（内部会执行 `vite build --mode capacitor`，读取 `.env.capacitor`）
 
-3) 连接 Vite build 输出
-- Capacitor 配置 `webDir=dist`
+3) Sync
+- iOS：`npm run cap:sync:ios`
+- Android：`npm run cap:sync:android`
 
-4) Build + Sync
-- `npm run build`
-- `npx cap sync`
+4) 打开原生工程
+- iOS：`npm run cap:open:ios`
+- Android：`npm run cap:open:android`
 
 5) 真机运行
-- iOS：`npx cap open ios`（Xcode 运行）
-- Android：`npx cap open android`（Android Studio 运行）
+- Xcode / Android Studio 选择设备 → Run ▶
 
 ---
 
