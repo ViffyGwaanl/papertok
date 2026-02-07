@@ -95,10 +95,15 @@
 
 ### Phase 1 — Capacitor iOS MVP（1–2 天）
 任务：
-1) 在 `frontend/wikitok/frontend/` 初始化 Capacitor（webDir 指向 `dist`）
-2) `npm run build` → `npx cap sync ios`
-3) Xcode 打开并在真机运行
+1) 在 `frontend/wikitok/frontend/` 初始化 Capacitor（webDir 指向 `dist`）并提交 `ios/` 工程（便于协作）
+2) 构建与同步（仅公网）：
+   - `npm run cap:sync:ios`
+   - 该脚本会执行 `vite build --mode capacitor`，并读取 `frontend/wikitok/frontend/.env.capacitor` 中的 `VITE_API_BASE=https://papertok.app-so.com`
+3) Xcode 打开并在真机运行：
+   - `npm run cap:open:ios`
 4) 接入 Browser/Share 插件（按需）
+
+备注：Capacitor iOS 默认采用 Swift Package Manager（SPM），不强依赖 Cocoapods（更适合你当前“无开发者账号 + 本机 Xcode 安装”的流程）。
 
 验收（真机）：
 - 首屏能加载出卡片（含图片）

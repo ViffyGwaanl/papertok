@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:capacitor": "tsc -b && vite build --mode capacitor",
+    "cap:sync:ios": "npm run build:capacitor && npx cap sync ios",
+    "cap:open:ios": "npx cap open ios",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -21,6 +24,9 @@
     "tailwindcss": "^4.0.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.0.2",
+    "@capacitor/core": "^8.0.2",
+    "@capacitor/ios": "^8.0.2",
     "@eslint/js": "^9.17.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
