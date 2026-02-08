@@ -152,3 +152,10 @@
 - 经验记录（写入 runbook，便于复现/交接）：
   - Android Studio 首次导入会提示安装 SDK（API Platform/Build-Tools/Platform-Tools）
   - `adb: command not found` 通常是 Platform-Tools 未装或 PATH 未配置
+
+---
+
+## 17) Android APK 分发（Release 签名 + GitHub Releases）
+- 增加 release 签名配置模板（读取 `~/.gradle/gradle.properties` 或同名环境变量；仓库不落密钥）
+- 增加一键脚本：`ops/build_android_release_apk.sh`（产出 `exports/android/*.apk` + `.sha256`）
+- 增加发布文档：`docs/ANDROID_APK_RELEASE.md`（包含 GitHub Releases 分发流程）

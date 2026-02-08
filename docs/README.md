@@ -6,6 +6,7 @@
 - 主域（canonical）：`https://papertok.ai`
 - 别名域：`https://papertok.net`（**301 永久重定向**到 `papertok.ai`）
 - Admin 面：Cloudflare Access（邮箱白名单）+ 后端 `X-Admin-Token` 双重保护
+- Android 分发：release 签名 APK，推荐通过 **GitHub Releases** 分发（附带 `.sha256`）
 
 ## 目录
 

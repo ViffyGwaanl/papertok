@@ -52,7 +52,12 @@ npm run cap:open:ios
 
 ## 3) Android（Android Studio Run）
 
-> 如果你要“发给别人安装”，请看：`docs/ANDROID_APK_RELEASE.md`（release 签名 APK）。
+> 如果你要“发给别人安装”，请看：`docs/ANDROID_APK_RELEASE.md`（release 签名 APK，建议通过 GitHub Releases 分发）。
+
+### 3.0 不用 Android Studio 的安装方式（给收包的人）
+- 打开项目的 GitHub Releases 页面，下载 `*.apk`
+- 在 Android 手机上允许“安装未知来源应用”后直接安装
+- 如需校验：对照同名 `*.sha256`
 
 步骤：
 

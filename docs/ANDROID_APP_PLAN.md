@@ -90,7 +90,16 @@ npm run cap:open:android
 
 ---
 
-## 5) 后续阶段（引入 LAN 直连）
+## 5) APK 分发（给别人安装 / 可升级覆盖安装）
+
+- 必须使用 **release 签名 APK**（debug 不适合分发）
+- 推荐渠道：**GitHub Releases**（可追溯 + 可附带 sha256 校验）
+
+详见：`docs/ANDROID_APK_RELEASE.md`
+
+---
+
+## 6) 后续阶段（引入 LAN 直连）
 
 当公网版本稳定后，再引入 LAN：
 - Android 需要配置 `networkSecurityConfig` 或 `usesCleartextTraffic`（如果走 HTTP）
