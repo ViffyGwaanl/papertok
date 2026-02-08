@@ -1,7 +1,7 @@
 # PaperTok iOS App 计划（阶段 1：仅公网 HTTPS）
 
 > 目标：先用 **Capacitor** 把现有 React/Vite 前端做成可安装的 iPhone App（Internal Build），
-> **只使用公网域名** `https://papertok.app-so.com`，不做 LAN 直连（避免 ATS/本地网络权限等平台复杂度）。
+> **只使用公网域名** `https://papertok.ai`（推荐主域；`https://papertok.net` 可选别名），不做 LAN 直连（避免 ATS/本地网络权限等平台复杂度）。
 >
 > 关键词：最小成本、最快跑通、工程可持续（版本化、验收、回归、安全边界）。
 >
@@ -18,7 +18,7 @@
   - 详情弹窗：讲解 / 原文（MinerU MD）/ 图片与图注（`/api/papers/{id}` + `/static/*`）
   - 打开 arXiv PDF（外链）
   - 分享当前 paper 链接
-- 网络：**只走公网 HTTPS**：`https://papertok.app-so.com`
+- 网络：**只走公网 HTTPS**：`https://papertok.ai`（推荐主域；`https://papertok.net` 可选别名）
 
 ### 0.2 非目标（本阶段不做）
 - LAN 直连（HTTP/HTTPS）
@@ -69,7 +69,7 @@
 - `src/lib/apiBase.ts`：统一导出 `API_BASE` 与 `apiUrl()`
 - 关键模块（feed、详情、Admin）均已改为从该模块取 base
 
-本阶段仅公网：`VITE_API_BASE=https://papertok.app-so.com`（见 `.env.capacitor`）。
+本阶段仅公网：`VITE_API_BASE=https://papertok.ai`（见 `.env.capacitor`；若你想用别名也可改成 `https://papertok.net`）。
 
 ### 3.2 处理 Service Worker（Capacitor 环境）（已落地）
 
@@ -95,7 +95,7 @@
 1) 在 `frontend/wikitok/frontend/` 初始化 Capacitor（webDir 指向 `dist`）并提交 `ios/` 工程（便于协作）
 2) 构建与同步（仅公网）：
    - `npm run cap:sync:ios`
-   - 该脚本会执行 `vite build --mode capacitor`，并读取 `frontend/wikitok/frontend/.env.capacitor` 中的 `VITE_API_BASE=https://papertok.app-so.com`
+   - 该脚本会执行 `vite build --mode capacitor`，并读取 `frontend/wikitok/frontend/.env.capacitor` 中的 `VITE_API_BASE=https://papertok.ai`
 3) Xcode 打开并在真机运行：
    - `npm run cap:open:ios`
 4) 接入 Browser/Share 插件（按需）

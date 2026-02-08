@@ -269,8 +269,9 @@ bash ops/launchd/prune_optional.sh
   - `PAPERTOK_ALLOWED_CIDRS=*`（不限制主站 IP）
   - `PAPERTOK_ADMIN_TOKEN=...`（强制 Admin API header）
 - Cloudflare Access：
-  - 保护 `papertok.app-so.com/admin*`（Admin UI）
-  - 保护 `papertok.app-so.com/api/admin*`（Admin API）
+  - 保护 `papertok.ai/admin*`（Admin UI）
+  - 保护 `papertok.ai/api/admin*`（Admin API）
+  - （可选）`papertok.net` 作为别名时也做同样保护，或直接 301 到 `papertok.ai`
   - 策略仅允许你的邮箱（如 `qq983929606@gmail.com`）
 
 2) **继续启用 IP allowlist（更严格）**
@@ -302,8 +303,8 @@ bash ops/launchd/prune_optional.sh
 
 处理顺序（从轻到重）：
 1) 用无痕窗口打开（最常用）：`/` 或 `/admin`
-2) URL 加版本号强制刷新：`https://papertok.app-so.com/?v=3`（随便换个数字即可）
-3) iOS：设置 → Safari → 高级 → 网站数据 → 删除 `papertok.app-so.com`
+2) URL 加版本号强制刷新：`https://papertok.ai/?v=3`（随便换个数字即可；别名用 `https://papertok.net/?v=3`）
+3) iOS：设置 → Safari → 高级 → 网站数据 → 删除 `papertok.ai`（如使用别名，也删除 `papertok.net`）
 4) 如果是“添加到主屏幕”的 PWA：删除桌面图标后重新添加
 
 ### 11.4 worker job 卡住 running

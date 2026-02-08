@@ -1,7 +1,7 @@
 # PaperTok Android App 计划（阶段 1：仅公网 HTTPS）
 
 > 目标：用 **Capacitor** 把现有 React/Vite 前端打包成 Android App（Internal Build），
-> **只使用公网域名** `https://papertok.app-so.com`，不做 LAN 直连（避免 Android cleartext/networkSecurityConfig 复杂度）。
+> **只使用公网域名** `https://papertok.ai`（推荐主域；`https://papertok.net` 可选别名），不做 LAN 直连（避免 Android cleartext/networkSecurityConfig 复杂度）。
 >
 > **当前状态**：✅ 已在本地 Android Studio 真机安装运行成功（internal build）。
 
@@ -16,7 +16,7 @@
   - 详情弹窗：讲解 / 原文（MinerU MD）/ 图片与图注（`/api/papers/{id}` + `/static/*`）
   - 打开 arXiv PDF（外链）
   - 分享 paper 链接
-- 网络：**只走公网 HTTPS**：`https://papertok.app-so.com`
+- 网络：**只走公网 HTTPS**：`https://papertok.ai`（推荐主域；`https://papertok.net` 可选别名）
 
 ### 0.2 非目标（本阶段不做）
 - LAN 直连（HTTP/HTTPS）
@@ -55,7 +55,7 @@
 - Android 工程目录（提交到 git，便于协作）：`papertok/frontend/wikitok/frontend/android/`
 - 构建模式：`vite build --mode capacitor`
 - 公网 API base：读取 `frontend/wikitok/frontend/.env.capacitor`：
-  - `VITE_API_BASE=https://papertok.app-so.com`
+  - `VITE_API_BASE=https://papertok.ai`
 
 脚本：
 - `npm run cap:sync:android`：构建 + `cap sync android`

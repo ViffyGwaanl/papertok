@@ -32,9 +32,11 @@ PaperTok 推荐把防护拆成 4 层（从外到内）：
 - 可选：WAF / Rate limiting（当访问量上来或被扫时再加）。
 
 ### L2：Cloudflare Access（身份层）
-- 建议用 Access 只保护管理面：
-  - `papertok.app-so.com/admin*`
-  - `papertok.app-so.com/api/admin*`
+- 建议用 Access 只保护管理面（主域推荐 `papertok.ai`，别名可选 `papertok.net`）：
+  - `papertok.ai/admin*`
+  - `papertok.ai/api/admin*`
+  - （可选）`papertok.net/admin*`
+  - （可选）`papertok.net/api/admin*`
 - 策略：仅允许指定邮箱登录（One-time PIN 或接入 Google IdP 均可）。
 
 ### L3：后端管理口令（应用层）

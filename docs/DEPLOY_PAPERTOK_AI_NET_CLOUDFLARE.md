@@ -1,14 +1,15 @@
-# app-so.com 上线 PaperTok（无 VPS，Cloudflare Tunnel）
+# papertok.ai / papertok.net 上线 PaperTok（无 VPS，Cloudflare Tunnel）
 
 > 目标：不购买 VPS，直接把 Mac mini 上的 PaperTok 通过 Cloudflare Tunnel 暴露到公网。
 >
-> 默认域名：`papertok.app-so.com`（推荐）
+> 推荐：以 `papertok.ai` 作为**主域（canonical）**，`papertok.net` 作为**别名（alias，可选）**。
 
 ---
 
 ## 0) 前置检查
 
-- [ ] `app-so.com` 已在 Cloudflare Dashboard 中激活（Nameserver 已生效）
+- [ ] `papertok.ai` 已在 Cloudflare Dashboard 中激活（Nameserver 已生效）
+- [ ] （可选）`papertok.net` 也已在 Cloudflare 中激活（Nameserver 已生效）
 - [ ] 本机 PaperTok 可访问：`http://127.0.0.1:8000/healthz` 返回 `{ok:true}`
 - [ ] 本机已安装 cloudflared：`cloudflared --version`
 
@@ -20,7 +21,9 @@
 ```bash
 cloudflared tunnel login
 ```
-在浏览器里选择并授权 Zone：`app-so.com`。
+在浏览器里选择并授权你的 Zone（建议先选 `papertok.ai`）。
+
+> 如果你后续为 `papertok.net` 绑定 DNS 时提示没有权限，重新执行一次 `cloudflared tunnel login` 并选择 `papertok.net` 即可。
 
 授权成功后，会在 `~/.cloudflared/` 下生成证书文件。
 
@@ -30,9 +33,15 @@ cloudflared tunnel create papertok-mac
 ```
 记录输出的 **Tunnel UUID**。
 
-### 1.3 绑定 DNS
+### 1.3 绑定 DNS（主域 + 可选别名）
+主域：
 ```bash
-cloudflared tunnel route dns papertok-mac papertok.app-so.com
+cloudflared tunnel route dns papertok-mac papertok.ai
+```
+
+别名（可选）：
+```bash
+cloudflared tunnel route dns papertok-mac papertok.net
 ```
 
 ---
@@ -45,7 +54,9 @@ tunnel: <TUNNEL-UUID>
 credentials-file: /Users/<YOU>/.cloudflared/<TUNNEL-UUID>.json
 
 ingress:
-  - hostname: papertok.app-so.com
+  - hostname: papertok.ai
+    service: http://127.0.0.1:8000
+  - hostname: papertok.net
     service: http://127.0.0.1:8000
   - service: http_status:404
 ```
@@ -73,7 +84,7 @@ brew services list | rg cloudflared
 
 ## 4) PaperTok 侧安全配置（强烈建议）
 
-因为 Tunnel 会把你的服务暴露到公网，建议至少做两层保护：
+因为 Tunnel 会把你的服务暴露到公网，建议至少做两层保护。
 
 ### 4.1 Admin API 强制 Token
 在 `papertok/.env` 设置：
@@ -81,7 +92,7 @@ brew services list | rg cloudflared
 PAPERTOK_ADMIN_TOKEN=<random>
 ```
 
-这样 `/api/admin/*` 与 `/api/admin/jobs/*` 必须带 `X-Admin-Token`。
+这样 `/api/admin/*` 必须带 `X-Admin-Token`。
 
 ### 4.2 IP Allowlist 的策略
 - 如果你希望主站公开（只限制 admin），建议关闭 allowlist：
@@ -104,46 +115,60 @@ PAPERTOK_ALLOWED_CIDRS=*
 - Include：`Emails` → 填你的邮箱（如 `qq983929606@gmail.com`）
 - 保存
 
-### 5.2 创建自托管应用（Admin UI）
+### 5.2 选择“别名域”的策略（两种二选一）
+
+**推荐（更省事）**：只保护 `papertok.ai`，并把 `papertok.net` 做 301 跳转到 `papertok.ai`。
+- 好处：Access 只需配置一套；App/文档都用主域。
+
+**备选（两个域都可直连）**：在 `papertok.ai` 与 `papertok.net` 各自创建一套 Access Applications。
+- 好处：两个域都能直接访问，不依赖跳转。
+
+### 5.3 创建自托管应用（Admin UI）
 - **Access controls → Applications → Add an application → Self-hosted**
 - Application URL：
-  - Hostname：`papertok.app-so.com`
+  - Hostname：`papertok.ai`
   - Path：`admin*`
-- 创建后进入该应用的 **Edit → 策略**
+- 创建后进入该应用的 **Edit → 策略**：
   - 选择现有策略（Select existing policy）
   - 勾选上一步创建的“允许邮箱”策略
   - 保存应用
 
-> 备注：Path 通常不需要前导 `/`；用 `admin*` 可覆盖 `/admin` 和 `/admin/xxx`。
+> 如果你也要保护 `papertok.net`，照抄创建一份 Hostname 为 `papertok.net` 的应用。
 
-### 5.3 创建自托管应用（Admin API）
+### 5.4 创建自托管应用（Admin API）
 同样创建一个 Self-hosted 应用：
-- Hostname：`papertok.app-so.com`
+- Hostname：`papertok.ai`
 - Path：`api/admin*`
 - 在 **Edit → 策略** 里绑定同一条“允许邮箱”策略并保存。
 
-> 为什么拆两个应用：路径更清晰、策略可独立调整；且 `/api/admin*` 一定要保护，否则别人可以直接打 API。
-
-### 5.4 healthz 是否需要 bypass？
-- 推荐：`/healthz` 不走 Access（保持公开），方便你做健康检查和排障。
-- 因为我们是“只保护 /admin* 与 /api/admin*”，所以 `/healthz` 默认不会被 Access 影响。
+> 如果你也要保护 `papertok.net`，照抄创建一份 Hostname 为 `papertok.net` 的应用。
 
 ---
 
 ## 6) 验收
 
 外网执行（或手机 5G）：
-- [ ] `https://papertok.app-so.com/` 正常打开
-- [ ] `https://papertok.app-so.com/healthz` 返回 `{ok:true}`
-- [ ] 未登录时：访问 `/admin` 会被 **302** 到 Cloudflare Access 登录页
-- [ ] 未登录时：访问 `/api/admin/config` 会被 **302** 到 Cloudflare Access 登录页
-- [ ] 登录后：仅允许的邮箱能通过；其他邮箱被拒绝
-- [ ] 即使通过 Access，后端仍要求 `X-Admin-Token`（如果你设置了 `PAPERTOK_ADMIN_TOKEN`）
+
+主域：
+- [ ] `https://papertok.ai/` 正常打开
+- [ ] `https://papertok.ai/healthz` 返回 `{ok:true}`
+- [ ] 未登录时：访问 `https://papertok.ai/admin` 会被 **302** 到 Cloudflare Access 登录页
+- [ ] 未登录时：访问 `https://papertok.ai/api/admin/config` 会被 **302** 到 Cloudflare Access 登录页
+- [ ] 即使通过 Access，后端仍要求 `X-Admin-Token`（若设置了 `PAPERTOK_ADMIN_TOKEN`）
+
+别名（如果启用）：
+- [ ] `https://papertok.net/` 正常打开（或正确 301 到 `https://papertok.ai/`）
+
+回归测试（推荐）：
+```bash
+PAPERTOK_PUBLIC_BASE_URLS="https://papertok.ai,https://papertok.net" \
+  ./ops/security_smoke.sh
+```
 
 ---
 
 ## 7) 回滚
 
 - 停 tunnel：`brew services stop cloudflared`
-- 删除 DNS route：在 Cloudflare DNS 中删除 `papertok` 记录
+- 删除 DNS route：在 Cloudflare DNS 中删除 `papertok.ai` / `papertok.net` 记录
 - 删除 tunnel：`cloudflared tunnel delete papertok-mac`

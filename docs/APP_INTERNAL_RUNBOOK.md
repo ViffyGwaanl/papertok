@@ -2,7 +2,7 @@
 
 > 目的：你在自己的开发机上把仓库 clone 下来后，能稳定复现 iOS/Android 的安装与运行。
 >
-> 当前阶段：**仅公网 HTTPS**（`https://papertok.app-so.com`），不包含 LAN 直连。
+> 当前阶段：**仅公网 HTTPS**（推荐 `https://papertok.ai`；`https://papertok.net` 可选别名），不包含 LAN 直连。
 
 ---
 
@@ -84,10 +84,12 @@ npm run cap:open:android
 
 ### 4.1 App 打开后加载失败（白屏/一直 Loading）
 - 确认公网可访问：
-  - `https://papertok.app-so.com/healthz`
-  - `https://papertok.app-so.com/api/status`
+  - `https://papertok.ai/healthz`
+  - `https://papertok.ai/api/status`
+  - （可选别名）`https://papertok.net/healthz`
+  - （可选别名）`https://papertok.net/api/status`
 - 确认 Capacitor build 使用了 `.env.capacitor`：
-  - `VITE_API_BASE=https://papertok.app-so.com`
+  - `VITE_API_BASE=https://papertok.ai`（推荐；或用别名 `https://papertok.net`）
 
 ### 4.2 iOS 签名问题
 - 确认 Xcode 已登录 Apple ID

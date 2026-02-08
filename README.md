@@ -10,7 +10,7 @@
 ## 当前已经做了什么（现状）
 - ✅ FastAPI + SQLite（SQLModel）后端
 - ✅ 同源单服务：后端托管前端 `dist/`，避免前后端分开导致的黑屏/跨域/localhost 问题
-- ✅ 公网入口（无 VPS）：Cloudflare Tunnel → `https://papertok.app-so.com/`
+- ✅ 公网入口（无 VPS）：Cloudflare Tunnel → `https://papertok.ai/`（推荐主域），`https://papertok.net/`（别名/可选）
 - ✅ Zero Trust：Cloudflare Access 保护 `/admin*` 与 `/api/admin*`（仅允许指定邮箱）
 - ✅ API：
   - `GET /healthz`
@@ -30,7 +30,7 @@
 - ✅ PWA 的 Service Worker 已修：打开 `/static/*` 不会被错误 fallback 到首页
 - ✅ Capacitor 构建模式（`vite build --mode capacitor`）默认禁用 PWA/SW，避免 WebView 缓存干扰
 - ✅ 移动端/公网同源加载修复：前端默认使用 `window.location.origin` 访问 API（不再硬编码 `:8000`）
-- ✅ iOS/Android（Internal Build）骨架已落地：Capacitor 工程（`frontend/wikitok/frontend/ios` + `android`）已提交；阶段 1 先只用公网 `https://papertok.app-so.com`（见 `docs/APP_INTERNAL_RUNBOOK.md`）
+- ✅ iOS/Android（Internal Build）骨架已落地：Capacitor 工程（`frontend/wikitok/frontend/ios` + `android`）已提交；阶段 1 先只用公网 `https://papertok.ai`（推荐主域；`https://papertok.net` 可选）（见 `docs/APP_INTERNAL_RUNBOOK.md`）
 - ✅ 前端 `API_BASE` 单点真理：`frontend/wikitok/frontend/src/lib/apiBase.ts`
 - ✅ 移除弹窗“PDF(本地)”入口（保留 arXiv PDF）
 

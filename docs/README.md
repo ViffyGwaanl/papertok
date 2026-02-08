@@ -25,7 +25,7 @@
 19. [iOS App 计划（阶段 1：仅公网 HTTPS）](./IOS_APP_PLAN.md)
 20. [Android App 计划（阶段 1：仅公网 HTTPS）](./ANDROID_APP_PLAN.md)
 21. [App 内部安装指南（iOS/Android，本地签名/运行）](./APP_INTERNAL_RUNBOOK.md)
-22. [app-so.com 上线步骤（Cloudflare Tunnel，无 VPS）](./DEPLOY_APP_SO_COM_CLOUDFLARE.md)
+22. [papertok.ai / papertok.net 上线步骤（Cloudflare Tunnel，无 VPS）](./DEPLOY_PAPERTOK_AI_NET_CLOUDFLARE.md)
 23. [安全模型（Defense in Depth）](./SECURITY.md)
 
 ---
