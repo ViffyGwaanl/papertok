@@ -309,7 +309,7 @@ export function WikiCard({ article }: WikiCardProps) {
                                     className={`px-3 py-1.5 text-sm rounded ${tab === 'markdown' ? 'bg-white/20' : 'bg-white/10 hover:bg-white/20'}`}
                                     title="MinerU markdown"
                                 >
-                                    原文(MD)
+                                    原文
                                 </button>
                                 <button
                                     onClick={() => setTab('images')}
@@ -328,7 +328,7 @@ export function WikiCard({ article }: WikiCardProps) {
                                             target="_blank"
                                             rel="noreferrer"
                                         >
-                                            <ExternalLink className="w-4 h-4" /> PDF(arXiv)
+                                            <ExternalLink className="w-4 h-4" /> PDF
                                         </a>
                                     )}
                                     {detail?.url && (
