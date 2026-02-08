@@ -287,7 +287,7 @@ export function WikiCard({ article }: WikiCardProps) {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setShowDetail(false)}
-                                        className="px-3 py-1.5 text-sm rounded bg-white/10 hover:bg-white/20"
+                                        className="px-3 py-1.5 text-sm rounded bg-white/10 hover:bg-white/20 whitespace-nowrap shrink-0 min-w-[3.5rem]"
                                     >
                                         关闭
                                     </button>
