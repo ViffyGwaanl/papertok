@@ -71,7 +71,7 @@ function MainPage() {
 
   return (
     <div className="h-screen w-full bg-black text-white overflow-y-scroll snap-y snap-mandatory hide-scroll">
-      <div className="fixed top-4 left-4 z-50">
+      <div className="fixed z-50 safe-top-4 safe-left-4">
         <button
           onClick={() => window.location.reload()}
           className="text-2xl font-bold text-white drop-shadow-lg hover:opacity-80 transition-opacity"
@@ -80,7 +80,7 @@ function MainPage() {
         </button>
       </div>
 
-      <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
+      <div className="fixed z-50 flex flex-col items-end gap-2 safe-top-4 safe-right-4">
         <button
           onClick={() => setShowAbout(!showAbout)}
           className="text-sm text-white/70 hover:text-white transition-colors"
@@ -97,7 +97,7 @@ function MainPage() {
       </div>
 
       {showAbout && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 safe-p-4">
           <div className="bg-gray-900 z-[41] p-6 rounded-lg max-w-md relative">
             <button
               onClick={() => setShowAbout(false)}
@@ -123,7 +123,7 @@ function MainPage() {
       )}
 
       {showLikes && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 safe-p-4">
           <div className="bg-gray-900 z-[41] p-6 rounded-lg w-full max-w-2xl h-[80vh] flex flex-col relative">
             <button
               onClick={() => setShowLikes(false)}

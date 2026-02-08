@@ -243,7 +243,7 @@ export function WikiCard({ article }: WikiCardProps) {
 
                 {/* Caption modal (for markdown/images) */}
                 {captionModal && (
-                    <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm p-4 flex items-center justify-center">
+                    <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm p-4 safe-p-4 flex items-center justify-center">
                         <div className="w-full max-w-2xl bg-gray-950 border border-white/10 rounded-lg overflow-hidden">
                             <div className="p-3 border-b border-white/10 flex items-center justify-between">
                                 <div className="text-sm text-white/80 truncate">图注</div>
@@ -270,7 +270,7 @@ export function WikiCard({ article }: WikiCardProps) {
 
                 {/* Detail modal */}
                 {showDetail && (
-                    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm p-4 flex items-center justify-center">
+                    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm p-4 safe-p-4 flex items-center justify-center">
                         <div className="w-full max-w-3xl h-[85vh] bg-gray-950 border border-white/10 rounded-lg overflow-hidden flex flex-col">
                             <div className="p-4 border-b border-white/10 flex items-start justify-between gap-3">
                                 <div className="min-w-0">

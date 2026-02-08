@@ -1,5 +1,26 @@
 @import "tailwindcss";
 
+/* Safe-area helpers (iOS notch / Android translucent status bar) */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+.safe-top-4 { top: calc(var(--sat) + 1rem); }
+.safe-left-4 { left: calc(var(--sal) + 1rem); }
+.safe-right-4 { right: calc(var(--sar) + 1rem); }
+
+/* padding utilities (keep existing Tailwind p-4 but add safe-area on top/sides when needed) */
+.safe-pt-4 { padding-top: calc(var(--sat) + 1rem); }
+.safe-p-4 {
+  padding-top: calc(var(--sat) + 1rem);
+  padding-right: calc(var(--sar) + 1rem);
+  padding-bottom: calc(var(--sab) + 1rem);
+  padding-left: calc(var(--sal) + 1rem);
+}
+
 html, body {
   overscroll-behavior-y: contain;
   overflow: hidden;

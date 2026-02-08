@@ -226,7 +226,7 @@ export function AdminPage() {
   };
 
   return (
-    <div className="h-screen w-full overflow-y-auto overscroll-contain touch-pan-y bg-black text-white p-4 [-webkit-overflow-scrolling:touch]">
+    <div className="h-screen w-full overflow-y-auto overscroll-contain touch-pan-y bg-black text-white p-4 safe-pt-4 [-webkit-overflow-scrolling:touch]">
       <div className="max-w-4xl mx-auto space-y-4 pb-24">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xl font-bold">PaperTok Admin</div>
