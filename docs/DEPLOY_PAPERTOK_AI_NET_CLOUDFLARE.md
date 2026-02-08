@@ -2,7 +2,7 @@
 
 > 目标：不购买 VPS，直接把 Mac mini 上的 PaperTok 通过 Cloudflare Tunnel 暴露到公网。
 >
-> 推荐：以 `papertok.ai` 作为**主域（canonical）**，`papertok.net` 作为**别名（alias，可选）**。
+> 推荐：以 `papertok.ai` 作为**主域（canonical）**，`papertok.net` 作为**别名（alias）**并对全站做 **301 永久重定向**到 `papertok.ai`。
 
 ---
 
@@ -117,11 +117,38 @@ PAPERTOK_ALLOWED_CIDRS=*
 
 ### 5.2 选择“别名域”的策略（两种二选一）
 
-**推荐（更省事）**：只保护 `papertok.ai`，并把 `papertok.net` 做 301 跳转到 `papertok.ai`。
-- 好处：Access 只需配置一套；App/文档都用主域。
+**推荐（canonical + 301）**：
+- 只把 Cloudflare Access 配在 `papertok.ai`（`/admin*` + `/api/admin*`）
+- 把 `papertok.net/*` **301 永久重定向**到 `https://papertok.ai/$1`（保留 path + query）
+
+好处：
+- Access 只需维护一套
+- App/文档/分享链接统一用主域，减少不必要的重定向
+
+> 注意：301 有缓存效应（浏览器/中间层可能会记住），不要频繁来回切。
+
+#### 5.2.1 配置 `papertok.net → papertok.ai` 301 重定向（Cloudflare Redirect Rules）
+在 Cloudflare Dashboard 的 `papertok.net` Zone：
+- **Rules → Redirect Rules → Create rule**
+- Match：**All incoming requests**
+- Type：Dynamic
+- Target URL (Expression)：
+  - `concat("https://papertok.ai", http.request.uri.path)`
+- Status code：`301`
+- Preserve query string：✅
+- Deploy
+
+验收（推荐用 curl，避免浏览器缓存干扰）：
+```bash
+curl -I https://papertok.net/
+curl -I https://papertok.net/api/status
+curl -I https://papertok.net/admin
+```
+期望：`Location` 指向 `https://papertok.ai/...`。
 
 **备选（两个域都可直连）**：在 `papertok.ai` 与 `papertok.net` 各自创建一套 Access Applications。
-- 好处：两个域都能直接访问，不依赖跳转。
+- 好处：两个域都能直接访问，不依赖跳转
+- 代价：维护面更大（更容易出现“某个域忘了保护”的配置漂移）
 
 ### 5.3 创建自托管应用（Admin UI）
 - **Access controls → Applications → Add an application → Self-hosted**
@@ -133,7 +160,7 @@ PAPERTOK_ALLOWED_CIDRS=*
   - 勾选上一步创建的“允许邮箱”策略
   - 保存应用
 
-> 如果你也要保护 `papertok.net`，照抄创建一份 Hostname 为 `papertok.net` 的应用。
+> 如果你选择“两个域都可直连”的备选策略（不做 301），则照抄创建一份 Hostname 为 `papertok.net` 的应用。
 
 ### 5.4 创建自托管应用（Admin API）
 同样创建一个 Self-hosted 应用：
@@ -141,7 +168,7 @@ PAPERTOK_ALLOWED_CIDRS=*
 - Path：`api/admin*`
 - 在 **Edit → 策略** 里绑定同一条“允许邮箱”策略并保存。
 
-> 如果你也要保护 `papertok.net`，照抄创建一份 Hostname 为 `papertok.net` 的应用。
+> 如果你选择“两个域都可直连”的备选策略（不做 301），则照抄创建一份 Hostname 为 `papertok.net` 的应用。
 
 ---
 
@@ -156,8 +183,8 @@ PAPERTOK_ALLOWED_CIDRS=*
 - [ ] 未登录时：访问 `https://papertok.ai/api/admin/config` 会被 **302** 到 Cloudflare Access 登录页
 - [ ] 即使通过 Access，后端仍要求 `X-Admin-Token`（若设置了 `PAPERTOK_ADMIN_TOKEN`）
 
-别名（如果启用）：
-- [ ] `https://papertok.net/` 正常打开（或正确 301 到 `https://papertok.ai/`）
+别名（推荐开启）：
+- [ ] `https://papertok.net/` 返回 **301** 并跳转到 `https://papertok.ai/`（保留 path + query）
 
 回归测试（推荐）：
 ```bash

@@ -12,7 +12,7 @@
 - 登录：**暂不需要**（未来可能增加账号体系）
 - 推送：**不需要**
 - 网络：分阶段推进（先快后稳）
-  - **阶段 1（当前已决定）**：仅公网 HTTPS（Cloudflare）：`https://papertok.<domain>`
+  - **阶段 1（当前已决定）**：仅公网 HTTPS（Cloudflare）：`https://papertok.ai`（主域 / canonical；`papertok.net` 作为别名 301 到 `papertok.ai`）
   - **阶段 2（后续可选）**：再加入局域网直连（用于本地测试/更快）：`http://<LAN-IP>:8000` 或局域网域名
 
 > 这会直接影响工程实现：iOS/Android 对“局域网 HTTP”有平台安全策略（ATS / cleartext）需要明确处理，见第 3 章。
@@ -100,7 +100,7 @@
 建议实现（分两阶段）：
 
 - **阶段 1（当前）仅公网 HTTPS**
-  - 使用单一变量：`VITE_API_BASE=https://papertok.<domain>`
+  - 使用单一变量：`VITE_API_BASE=https://papertok.ai`（主域 / canonical）
   - Capacitor 构建用 `vite build --mode capacitor`，并读取 `.env.capacitor`（仓库已提供）
 
 - **阶段 2（可选）加入 LAN**

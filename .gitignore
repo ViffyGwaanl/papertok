@@ -4,6 +4,8 @@
 # secrets
 .env
 backend/.env
+*.keystore
+*.jks
 
 # python
 backend/.venv/
@@ -12,6 +14,7 @@ backend/.venv/
 
 # data
 data/db/*.sqlite
+exports/
 data/raw/
 data/mineru/
 data/thumbs/

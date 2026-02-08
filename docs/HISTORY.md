@@ -99,7 +99,8 @@
 ---
 
 ## 11) 公网入口（Cloudflare Tunnel，无 VPS）
-- 在 Mac mini 上配置 Cloudflare Tunnel（cloudflared）把本机 `127.0.0.1:8000` 暴露为公网 HTTPS：`https://papertok.ai`（主域；`https://papertok.net` 可选别名）
+- 在 Mac mini 上配置 Cloudflare Tunnel（cloudflared）把本机 `127.0.0.1:8000` 暴露为公网 HTTPS：`https://papertok.ai`（主域 / canonical）
+- 域名规范化：`https://papertok.net/*` **301 永久重定向**到 `https://papertok.ai/$1`（保留 path + query）
 - 主站 `/` 保持公开访问
 
 ---
@@ -109,8 +110,7 @@
 - 自托管应用拆分为两条路径并绑定同一策略：
   - `papertok.ai/admin*`
   - `papertok.ai/api/admin*`
-  - （可选）`papertok.net/admin*`
-  - （可选）`papertok.net/api/admin*`
+- 由于 `papertok.net/*` 已 301 到 `papertok.ai`，通常**无需**再为 `papertok.net` 单独维护 Access Applications（除非你刻意保留别名域直连）。
 - 叠加后端 `X-Admin-Token`（`PAPERTOK_ADMIN_TOKEN`）作为第二道门
 
 ---
@@ -136,7 +136,7 @@
   - `ios/`（SPM，无需 CocoaPods）
   - `android/`
 - 新增 Capacitor 构建模式：`vite build --mode capacitor`
-  - 使用 `.env.capacitor` 注入 `VITE_API_BASE=https://papertok.ai`（阶段 1：仅公网；可选改成 `https://papertok.net`）
+  - 使用 `.env.capacitor` 注入 `VITE_API_BASE=https://papertok.ai`（阶段 1：仅公网；不要再设成 `https://papertok.net`，否则会多一次 301）
   - `mode=capacitor` 时禁用 PWA（避免 WebView 下 Service Worker 缓存干扰）
 - 新增脚本：
   - `npm run cap:sync:ios` / `cap:open:ios`

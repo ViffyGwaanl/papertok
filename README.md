@@ -10,7 +10,8 @@
 ## 当前已经做了什么（现状）
 - ✅ FastAPI + SQLite（SQLModel）后端
 - ✅ 同源单服务：后端托管前端 `dist/`，避免前后端分开导致的黑屏/跨域/localhost 问题
-- ✅ 公网入口（无 VPS）：Cloudflare Tunnel → `https://papertok.ai/`（推荐主域），`https://papertok.net/`（别名/可选）
+- ✅ 公网入口（无 VPS）：Cloudflare Tunnel → `https://papertok.ai/`（主域 / canonical）
+- ✅ 域名规范化：`https://papertok.net/*` **301 永久重定向**到 `https://papertok.ai/$1`（保留 path + query）
 - ✅ Zero Trust：Cloudflare Access 保护 `/admin*` 与 `/api/admin*`（仅允许指定邮箱）
 - ✅ API：
   - `GET /healthz`
@@ -30,7 +31,7 @@
 - ✅ PWA 的 Service Worker 已修：打开 `/static/*` 不会被错误 fallback 到首页
 - ✅ Capacitor 构建模式（`vite build --mode capacitor`）默认禁用 PWA/SW，避免 WebView 缓存干扰
 - ✅ 移动端/公网同源加载修复：前端默认使用 `window.location.origin` 访问 API（不再硬编码 `:8000`）
-- ✅ iOS/Android（Internal Build）骨架已落地：Capacitor 工程（`frontend/wikitok/frontend/ios` + `android`）已提交；阶段 1 先只用公网 `https://papertok.ai`（推荐主域；`https://papertok.net` 可选）（见 `docs/APP_INTERNAL_RUNBOOK.md`）
+- ✅ iOS/Android（Internal Build）骨架已落地：Capacitor 工程（`frontend/wikitok/frontend/ios` + `android`）已提交；阶段 1 仅使用公网 `https://papertok.ai`（主域 / canonical；避免 `papertok.net` 额外 301 跳转）（见 `docs/APP_INTERNAL_RUNBOOK.md`）
 - ✅ 前端 `API_BASE` 单点真理：`frontend/wikitok/frontend/src/lib/apiBase.ts`
 - ✅ 移除弹窗“PDF(本地)”入口（保留 arXiv PDF）
 
@@ -39,6 +40,7 @@
 - [x] 增加日志轮转（`daily/server` log 变大后会需要；见 `ops/launchd/com.papertok.logrotate.plist`）
 - [x] 安全收口（默认启用 IP 白名单：仅允许私网网段/localhost；可选 Basic Auth；见 `.env.example`）
 - [ ] 前端手势/轮播在更多手机浏览器上做一致性验证
+- [x] 域名规范化：`papertok.net/*` → `papertok.ai/$1`（301，保留 query）
 - [x] 可观测性：`/api/status` 已补齐缺失字段计数、按 provider 的生图覆盖、最近失败摘要
 
 ## 组件

@@ -1,8 +1,46 @@
 apply plugin: 'com.android.application'
 
+// ---- Release signing (required for distributable APKs) ----
+// For assembleRelease, provide the following properties via either:
+// 1) ~/.gradle/gradle.properties (recommended)
+// 2) environment variables (fallback)
+//
+//   PAPERTOK_STORE_FILE=/abs/path/papertok-release.keystore
+//   PAPERTOK_STORE_PASSWORD=...
+//   PAPERTOK_KEY_ALIAS=papertok
+//   PAPERTOK_KEY_PASSWORD=...
+
+def isReleaseTask = gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
+
+def propOrEnv = { String name ->
+    def v = project.findProperty(name)
+    if (v != null) return v.toString()
+    def e = System.getenv(name)
+    return e != null ? e.toString() : null
+}
+
+def signingProps = [
+        'PAPERTOK_STORE_FILE',
+        'PAPERTOK_STORE_PASSWORD',
+        'PAPERTOK_KEY_ALIAS',
+        'PAPERTOK_KEY_PASSWORD'
+]
+
+if (isReleaseTask) {
+    def missing = signingProps.findAll { !(propOrEnv(it)?.trim()) }
+    if (!missing.isEmpty()) {
+        throw new GradleException(
+                "Missing release signing properties: ${missing.join(', ')}\n" +
+                "Set them in ~/.gradle/gradle.properties (recommended) or export env vars with the same names.\n" +
+                "See docs: papertok/docs/ANDROID_APK_RELEASE.md"
+        )
+    }
+}
+
 android {
     namespace = "com.gwaanl.papertok"
     compileSdk = rootProject.ext.compileSdkVersion
+
     defaultConfig {
         applicationId "com.gwaanl.papertok"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -11,21 +49,44 @@ android {
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
-             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
-             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+            // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
+    // Keep release signing optional at config time (debug builds should work without any secrets).
+    def storeFilePath = propOrEnv('PAPERTOK_STORE_FILE')
+
+    signingConfigs {
+        release {
+            if (storeFilePath?.trim()) {
+                def storePass = propOrEnv('PAPERTOK_STORE_PASSWORD')
+                def keyAliasV = propOrEnv('PAPERTOK_KEY_ALIAS')
+                def keyPass = propOrEnv('PAPERTOK_KEY_PASSWORD')
+
+                storeFile file(storeFilePath)
+                storePassword storePass
+                keyAlias keyAliasV
+                keyPassword keyPass
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            if (storeFilePath?.trim()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
 
 repositories {
-    flatDir{
+    flatDir {
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
 }

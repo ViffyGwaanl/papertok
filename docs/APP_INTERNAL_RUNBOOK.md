@@ -2,7 +2,7 @@
 
 > 目的：你在自己的开发机上把仓库 clone 下来后，能稳定复现 iOS/Android 的安装与运行。
 >
-> 当前阶段：**仅公网 HTTPS**（推荐 `https://papertok.ai`；`https://papertok.net` 可选别名），不包含 LAN 直连。
+> 当前阶段：**仅公网 HTTPS**（使用主域 `https://papertok.ai`；`https://papertok.net` 作为别名已做 **301 永久重定向**到 `papertok.ai`），不包含 LAN 直连。
 
 ---
 
@@ -52,6 +52,8 @@ npm run cap:open:ios
 
 ## 3) Android（Android Studio Run）
 
+> 如果你要“发给别人安装”，请看：`docs/ANDROID_APK_RELEASE.md`（release 签名 APK）。
+
 步骤：
 
 ### 3.1 首次安装 Android SDK（只需一次）
@@ -86,10 +88,9 @@ npm run cap:open:android
 - 确认公网可访问：
   - `https://papertok.ai/healthz`
   - `https://papertok.ai/api/status`
-  - （可选别名）`https://papertok.net/healthz`
-  - （可选别名）`https://papertok.net/api/status`
+  - （可选）`https://papertok.net/healthz` / `https://papertok.net/api/status`（应 **301** 跳转到 `papertok.ai`）
 - 确认 Capacitor build 使用了 `.env.capacitor`：
-  - `VITE_API_BASE=https://papertok.ai`（推荐；或用别名 `https://papertok.net`）
+  - `VITE_API_BASE=https://papertok.ai`（主域 / canonical；不要再设成 `papertok.net` 以免多一次 301）
 
 ### 4.2 iOS 签名问题
 - 确认 Xcode 已登录 Apple ID

@@ -1,10 +1,12 @@
 # PaperTok Handbook（工程化说明书）
 
-> 版本：2026-02-07（持续更新；涵盖：Cloudflare Tunnel/Access 公网入口、移动端同源加载修复等）
+> 版本：2026-02-08（持续更新；涵盖：Cloudflare Tunnel/Access 公网入口、域名规范化、移动端同源加载修复等）
 
 ## 1) 总体概览
 
 PaperTok 是一个本地部署的“论文版 TikTok/WikiTok”应用：
+- 推荐主域（canonical）：`https://papertok.ai`
+- 别名域：`https://papertok.net`（**301 永久重定向**到 `papertok.ai`，保留 path + query）
 - 每天抓取 Hugging Face Daily Papers **当天 Top10**
 - 下载 arXiv PDF
 - 使用 **MinerU CLI** 本地解析 PDF → markdown + 抽图
@@ -271,7 +273,7 @@ bash ops/launchd/prune_optional.sh
 - Cloudflare Access：
   - 保护 `papertok.ai/admin*`（Admin UI）
   - 保护 `papertok.ai/api/admin*`（Admin API）
-  - （可选）`papertok.net` 作为别名时也做同样保护，或直接 301 到 `papertok.ai`
+  - `papertok.net` 作为别名推荐直接 **301** 到 `papertok.ai`（这样无需维护第二套 Access 配置）
   - 策略仅允许你的邮箱（如 `qq983929606@gmail.com`）
 
 2) **继续启用 IP allowlist（更严格）**

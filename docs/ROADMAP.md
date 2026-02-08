@@ -4,6 +4,7 @@
 
 ## 状态说明
 - **已落地**：Cloudflare Tunnel 公网入口 + Cloudflare Access 保护 `/admin*` 与 `/api/admin*`；后端 `X-Admin-Token` 双重校验。
+- **已落地**：域名规范化：`papertok.net/*` → `papertok.ai/$1`（301 永久重定向，保留 query）。
 - **已修复**：公网/移动端同源加载（前端默认使用 `window.location.origin`；不再硬编码 `:8000`）。
 - **已落地**：前端 `API_BASE` 单点真理（`src/lib/apiBase.ts`），避免 WebView/同源/localhost 分叉。
 - **已验收**：iOS/Android Capacitor internal build 已在真机安装运行（本地 Xcode/Android Studio）。

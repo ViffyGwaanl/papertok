@@ -32,11 +32,12 @@ PaperTok 推荐把防护拆成 4 层（从外到内）：
 - 可选：WAF / Rate limiting（当访问量上来或被扫时再加）。
 
 ### L2：Cloudflare Access（身份层）
-- 建议用 Access 只保护管理面（主域推荐 `papertok.ai`，别名可选 `papertok.net`）：
+- 建议用 Access 只保护管理面（推荐主域 `papertok.ai`）：
   - `papertok.ai/admin*`
   - `papertok.ai/api/admin*`
-  - （可选）`papertok.net/admin*`
-  - （可选）`papertok.net/api/admin*`
+
+  对于别名域 `papertok.net`，推荐做 **301 永久重定向**到 `papertok.ai`，从而无需再维护第二套 Access 配置。
+  （如果你刻意保留 `papertok.net` 直连访问，那就也需要为 `papertok.net/admin*` 与 `papertok.net/api/admin*` 配置 Access。）
 - 策略：仅允许指定邮箱登录（One-time PIN 或接入 Google IdP 均可）。
 
 ### L3：后端管理口令（应用层）
@@ -60,6 +61,9 @@ PaperTok 推荐把防护拆成 4 层（从外到内）：
 Cloudflare Access：
 - 两个 Self-hosted 应用：`admin*` + `api/admin*`
 - 绑定“仅允许指定邮箱”的可重用策略
+
+域名：
+- 推荐将 `papertok.net/*` **301 永久重定向**到 `https://papertok.ai/$1`，避免出现“某个别名域忘了做 Access”的安全配置漂移。
 
 ### 3.2 继续使用 IP allowlist（更严格）
 如果你想限制为“只有某些公网 IP 能访问”，并且前面有 Cloudflare 代理：

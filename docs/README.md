@@ -2,6 +2,11 @@
 
 > 适用场景：本地在 Mac mini 上长期运行 PaperTok（后端单服务托管前端），每天抓取 Hugging Face Daily Papers 当天 Top10，离线跑完整流水线，并提供 Admin/Ops 面板用于运维。
 
+## 快速事实（TL;DR）
+- 主域（canonical）：`https://papertok.ai`
+- 别名域：`https://papertok.net`（**301 永久重定向**到 `papertok.ai`）
+- Admin 面：Cloudflare Access（邮箱白名单）+ 后端 `X-Admin-Token` 双重保护
+
 ## 目录
 
 1. [总体概览](./Handbook.md#1-总体概览)
@@ -26,7 +31,8 @@
 20. [Android App 计划（阶段 1：仅公网 HTTPS）](./ANDROID_APP_PLAN.md)
 21. [App 内部安装指南（iOS/Android，本地签名/运行）](./APP_INTERNAL_RUNBOOK.md)
 22. [papertok.ai / papertok.net 上线步骤（Cloudflare Tunnel，无 VPS）](./DEPLOY_PAPERTOK_AI_NET_CLOUDFLARE.md)
-23. [安全模型（Defense in Depth）](./SECURITY.md)
+23. [Android APK 发布（给别人安装）](./ANDROID_APK_RELEASE.md)
+24. [安全模型（Defense in Depth）](./SECURITY.md)
 
 ---
 

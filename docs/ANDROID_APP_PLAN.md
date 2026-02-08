@@ -1,7 +1,7 @@
 # PaperTok Android App 计划（阶段 1：仅公网 HTTPS）
 
 > 目标：用 **Capacitor** 把现有 React/Vite 前端打包成 Android App（Internal Build），
-> **只使用公网域名** `https://papertok.ai`（推荐主域；`https://papertok.net` 可选别名），不做 LAN 直连（避免 Android cleartext/networkSecurityConfig 复杂度）。
+> **只使用公网域名** `https://papertok.ai`（主域 / canonical；`https://papertok.net` 作为别名 **301 永久重定向**到 `papertok.ai`），不做 LAN 直连（避免 Android cleartext/networkSecurityConfig 复杂度）。
 >
 > **当前状态**：✅ 已在本地 Android Studio 真机安装运行成功（internal build）。
 
@@ -16,7 +16,7 @@
   - 详情弹窗：讲解 / 原文（MinerU MD）/ 图片与图注（`/api/papers/{id}` + `/static/*`）
   - 打开 arXiv PDF（外链）
   - 分享 paper 链接
-- 网络：**只走公网 HTTPS**：`https://papertok.ai`（推荐主域；`https://papertok.net` 可选别名）
+- 网络：**只走公网 HTTPS**：`https://papertok.ai`（主域 / canonical；`https://papertok.net` 作为别名 301 到 `papertok.ai`）
 
 ### 0.2 非目标（本阶段不做）
 - LAN 直连（HTTP/HTTPS）
