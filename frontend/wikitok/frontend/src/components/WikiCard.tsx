@@ -1,11 +1,14 @@
 import { Share2, Heart, Image as ImageIcon, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { useLikedArticles } from '../contexts/LikedArticlesContext';
 
 import { API_BASE, apiUrl } from '../lib/apiBase';
+import { fetchJsonWithOfflineCache, fetchTextWithOfflineCache } from '../lib/offlineCache';
 
 export interface WikiArticle {
     title: string;
@@ -84,9 +87,15 @@ export function WikiCard({ article }: WikiCardProps) {
         // Always refetch so long-running background jobs (e.g. image captions) can show up.
         setDetailLoading(true);
         try {
-            const r = await fetch(apiUrl(`/api/papers/${article.pageid}`));
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            const j = (await r.json()) as PaperDetail;
+            const url = apiUrl(`/api/papers/${article.pageid}`);
+            const { data: j, fromCache } = await fetchJsonWithOfflineCache<PaperDetail>(
+                url,
+                `papertok:paper_detail:${article.pageid}`,
+                { maxAgeMs: 1000 * 60 * 60 * 24 * 7, fetchTimeoutMs: 12000 }
+            );
+            if (fromCache) {
+                setDetailError('（离线缓存内容：可能不是最新）');
+            }
             setDetail(j);
         } catch (e: any) {
             setDetailError(e?.message || 'Failed to load detail');
@@ -100,9 +109,14 @@ export function WikiCard({ article }: WikiCardProps) {
         if (!detailMarkdownUrl) return;
         setMarkdownLoading(true);
         try {
-            const r = await fetch(detailMarkdownUrl);
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            const t = await r.text();
+            const { text: t, fromCache } = await fetchTextWithOfflineCache(
+                detailMarkdownUrl,
+                `papertok:paper_markdown:${detail?.id || article.pageid}`,
+                { maxAgeMs: 1000 * 60 * 60 * 24 * 7, fetchTimeoutMs: 15000 }
+            );
+            if (fromCache && !detailError) {
+                setDetailError('（离线缓存内容：可能不是最新）');
+            }
             setMarkdownText(t);
         } catch (e: any) {
             setMarkdownText(`(加载失败) ${e?.message || ''}`);
@@ -112,20 +126,36 @@ export function WikiCard({ article }: WikiCardProps) {
     };
 
     const handleShare = async () => {
+        const title = article.displaytitle;
+        const text = article.extract || '';
+        const url = article.url;
+
+        // Prefer Capacitor native share inside iOS/Android apps.
+        if (Capacitor.isNativePlatform()) {
+            try {
+                await Share.share({ title, text, url, dialogTitle: '分享论文' });
+                return;
+            } catch (e) {
+                console.error('Capacitor Share failed:', e);
+            }
+        }
+
+        // Web Share API
         if (navigator.share) {
             try {
-                await navigator.share({
-                    title: article.displaytitle,
-                    text: article.extract || '',
-                    url: article.url
-                });
-            } catch (error) {
-                console.error('Error sharing:', error);
+                await navigator.share({ title, text, url });
+                return;
+            } catch (e) {
+                console.error('Web share failed:', e);
             }
-        } else {
-            // Fallback: Copy to clipboard
-            await navigator.clipboard.writeText(article.url);
-            alert('Link copied to clipboard!');
+        }
+
+        // Fallback: Copy to clipboard
+        try {
+            await navigator.clipboard.writeText(url);
+            alert('链接已复制');
+        } catch {
+            alert(url);
         }
     };
 

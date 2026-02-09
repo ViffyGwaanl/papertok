@@ -10,7 +10,7 @@ import { useWikiArticles } from "./hooks/useWikiArticles";
 function MainPage() {
   const [showAbout, setShowAbout] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
-  const { articles, loading, fetchArticles } = useWikiArticles();
+  const { articles, loading, offlineMode, fetchArticles } = useWikiArticles();
   const { likedArticles, toggleLike } = useLikedArticles();
   const observerTarget = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,6 +78,11 @@ function MainPage() {
         >
           PaperTok
         </button>
+        {offlineMode && (
+          <div className="mt-2 inline-flex items-center gap-2 rounded bg-yellow-500/15 border border-yellow-500/30 px-2 py-1 text-xs text-yellow-100">
+            离线缓存模式：展示上次成功加载的内容
+          </div>
+        )}
       </div>
 
       <div className="fixed z-50 flex flex-col items-end gap-2 safe-top-4 safe-right-4">
