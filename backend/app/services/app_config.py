@@ -24,11 +24,20 @@ class AppConfig(BaseModel):
     - background scripts (job start-time)
     """
 
-    # Feed gating: if true, hide papers that are not fully explained yet.
-    # This prevents the UI from showing partially processed papers.
+    # Feed gating: if true, hide papers that are not fully processed yet.
     feed_require_explain: bool = Field(
         default=True,
         description="Only show papers with content_explain_cn in the feed",
+    )
+
+    feed_require_image_captions: bool = Field(
+        default=True,
+        description="Only show papers with image_captions_json in the feed",
+    )
+
+    feed_require_generated_images: bool = Field(
+        default=True,
+        description="Only show papers that have generated PaperImage(s) for the selected provider",
     )
 
     paper_images_display_provider: str = Field(
@@ -56,6 +65,8 @@ def default_app_config() -> AppConfig:
     """Defaults: derive from current Settings (env + code defaults)."""
     return AppConfig(
         feed_require_explain=True,
+        feed_require_image_captions=True,
+        feed_require_generated_images=True,
         paper_images_display_provider=(settings.paper_images_display_provider or "seedream"),
         image_caption_context_chars=int(getattr(settings, "image_caption_context_chars", 2000)),
         image_caption_context_strategy=str(getattr(settings, "image_caption_context_strategy", "merge")),
@@ -127,5 +138,7 @@ def get_effective_app_config(session: Session) -> AppConfig:
 
     # Feed gating
     effective.feed_require_explain = bool(effective.feed_require_explain)
+    effective.feed_require_image_captions = bool(effective.feed_require_image_captions)
+    effective.feed_require_generated_images = bool(effective.feed_require_generated_images)
 
     return effective

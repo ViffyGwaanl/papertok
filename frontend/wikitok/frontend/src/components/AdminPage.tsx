@@ -113,6 +113,8 @@ export function AdminPage() {
     try {
       const payload: Record<string, any> = {
         feed_require_explain: Boolean(effective.feed_require_explain),
+        feed_require_image_captions: Boolean(effective.feed_require_image_captions),
+        feed_require_generated_images: Boolean(effective.feed_require_generated_images),
         paper_images_display_provider: effective.paper_images_display_provider,
         image_caption_context_chars: Number(effective.image_caption_context_chars),
         image_caption_context_strategy: effective.image_caption_context_strategy,
@@ -308,6 +310,54 @@ export function AdminPage() {
               >
                 <option value="1">Yes (skip unprocessed)</option>
                 <option value="0">No (show all)</option>
+              </select>
+            </label>
+
+            <label className="block text-sm">
+              <div className="text-white/70 mb-1">Feed require image captions</div>
+              <select
+                value={effective.feed_require_image_captions ? '1' : '0'}
+                onChange={(e) =>
+                  setCfg((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          effective: {
+                            ...prev.effective,
+                            feed_require_image_captions: e.target.value === '1',
+                          },
+                        }
+                      : prev
+                  )
+                }
+                className="w-full bg-gray-900 border border-white/10 rounded px-3 py-2 text-sm"
+              >
+                <option value="1">Yes (hide papers missing captions)</option>
+                <option value="0">No</option>
+              </select>
+            </label>
+
+            <label className="block text-sm">
+              <div className="text-white/70 mb-1">Feed require generated images</div>
+              <select
+                value={effective.feed_require_generated_images ? '1' : '0'}
+                onChange={(e) =>
+                  setCfg((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          effective: {
+                            ...prev.effective,
+                            feed_require_generated_images: e.target.value === '1',
+                          },
+                        }
+                      : prev
+                  )
+                }
+                className="w-full bg-gray-900 border border-white/10 rounded px-3 py-2 text-sm"
+              >
+                <option value="1">Yes (hide papers missing generated images)</option>
+                <option value="0">No</option>
               </select>
             </label>
 

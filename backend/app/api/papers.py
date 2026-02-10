@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import Session, select
+from sqlalchemy import exists
 
 from app.core.config import settings
 from app.db.engine import engine
@@ -63,10 +64,35 @@ def get_random_papers(
                 filter_day = day
 
         q = select(Paper.id).where(Paper.source == "hf_daily")
-        # Hide unprocessed papers by default (no explanation -> skip in feed)
+        # Hide unprocessed papers by default (skip in feed until "done")
         app_cfg = get_effective_app_config(session)
+
         if app_cfg.feed_require_explain:
-            q = q.where(Paper.content_explain_cn.is_not(None)).where(Paper.raw_text_path.is_not(None))
+            q = q.where(Paper.content_explain_cn.is_not(None)).where(
+                Paper.raw_text_path.is_not(None)
+            )
+
+        if app_cfg.feed_require_image_captions:
+            q = (
+                q.where(Paper.image_captions_json.is_not(None))
+                .where(Paper.image_captions_json != "")
+                .where(Paper.image_captions_json != "{}")
+                .where(Paper.image_captions_json != "null")
+            )
+
+        if app_cfg.feed_require_generated_images:
+            display = (app_cfg.paper_images_display_provider or "seedream").strip().lower()
+            img_subq = (
+                select(PaperImage.id)
+                .where(PaperImage.paper_id == Paper.id)
+                .where(PaperImage.kind == "generated")
+                .where(PaperImage.enabled == True)  # noqa: E712
+                .where(PaperImage.url_path.is_not(None))
+            )
+            if display in {"seedream", "glm"}:
+                img_subq = img_subq.where(PaperImage.provider == display)
+
+            q = q.where(exists(img_subq))
 
         if filter_day:
             q = q.where(Paper.day == filter_day)
