@@ -33,14 +33,52 @@ from app.services.app_config import get_effective_app_config
 from app.services.paper_events import record_paper_event
 
 
-def fetch_hf_daily(date: str) -> list[dict[str, Any]]:
+def fetch_hf_daily(date: str) -> tuple[str, list[dict[str, Any]]]:
+    """Fetch HF Daily Papers for a given date.
+
+    HF sometimes rejects a "future" date (from their perspective) with 400 like:
+      date must be <= "YYYY-MM-DDTHH:mm:ss.sssZ"
+
+    In that case we automatically fallback to the max-allowed date and continue,
+    so the daily job (scheduled in local time) won't fail every morning.
+
+    Returns: (effective_date, items_top_n)
+    """
+
     url = settings.hf_daily_papers_url
-    params = {"date": date}
-    with httpx.Client(timeout=30, trust_env=False) as client:
-        r = client.get(url, params=params)
+    headers = {
+        # Be explicit; some CDNs rate-limit/deny default clients.
+        "User-Agent": "papertok/0.1 (+https://papertok.ai)",
+        "Accept": "application/json",
+    }
+
+    def _parse_max_date(err_msg: str) -> str | None:
+        m = re.search(r'less than or equal to "(\d{4}-\d{2}-\d{2})T', err_msg)
+        return m.group(1) if m else None
+
+    with httpx.Client(timeout=30, trust_env=False, headers=headers) as client:
+        r = client.get(url, params={"date": date})
+
+        if r.status_code == 400:
+            try:
+                err = (r.json() or {}).get("error") or ""
+            except Exception:
+                err = r.text or ""
+
+            max_date = _parse_max_date(str(err))
+            if max_date and max_date != date:
+                print(
+                    f"HF_DAILY: requested date={date} rejected (400). "
+                    f"Fallback to max_allowed_date={max_date}."
+                )
+                r = client.get(url, params={"date": max_date})
+                r.raise_for_status()
+                data = r.json()
+                return max_date, data[: settings.hf_top_n]
+
         r.raise_for_status()
         data = r.json()
-    return data[: settings.hf_top_n]
+        return date, data[: settings.hf_top_n]
 
 
 def _safe_filename(s: str) -> str:
@@ -1291,9 +1329,11 @@ def main():
 
     date = datetime.now().strftime("%Y-%m-%d")
 
+    effective_date = date
+
     items: list[dict[str, Any]] = []
     if settings.hf_top_n > 0:
-        items = fetch_hf_daily(date)
+        effective_date, items = fetch_hf_daily(date)
     else:
         print("HF_TOP_N=0 -> skipping HuggingFace fetch")
 
@@ -1301,7 +1341,7 @@ def main():
         active_external_ids: set[str] = set()
 
         for item in items:
-            p = upsert_paper(session, item, day=date)
+            p = upsert_paper(session, item, day=effective_date)
             if p.external_id:
                 active_external_ids.add(str(p.external_id))
 
@@ -1338,8 +1378,8 @@ def main():
         # Note: we do NOT clear old days. Daily job only *processes* the fetched Top10,
         # while the feed can show full history.
 
-        # When fetching HF daily papers (HF_TOP_N>0), we scope the heavy pipeline to today's fetched list.
-        active_day = date if settings.hf_top_n > 0 else None
+        # When fetching HF daily papers (HF_TOP_N>0), we scope the heavy pipeline to the fetched day.
+        active_day = effective_date if settings.hf_top_n > 0 else None
         active_ids = sorted(active_external_ids) if settings.hf_top_n > 0 else None
 
         # Optional: PDF -> markdown + images via mineru (heavy, controlled by env flags).
