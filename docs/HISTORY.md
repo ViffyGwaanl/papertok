@@ -159,3 +159,32 @@
 - 增加 release 签名配置模板（读取 `~/.gradle/gradle.properties` 或同名环境变量；仓库不落密钥）
 - 增加一键脚本：`ops/build_android_release_apk.sh`（产出 `exports/android/*.apk` + `.sha256`）
 - 增加发布文档：`docs/ANDROID_APK_RELEASE.md`（包含 GitHub Releases 分发流程）
+
+---
+
+## 18) Feed 完成稿 gating（讲解 + 图注 + 生成图）
+- DB config 新增：`feed_require_image_captions`、`feed_require_generated_images`
+- `/api/papers/random` 默认只展示“讲解 + 图注 + 生成图”都齐的论文卡片
+- Admin 页面支持这两个开关（手机端可配置）
+
+## 19) Scheme B：Release-based Deployment（releases + current）
+- 新增 release 构建与切换脚本：
+  - `ops/release/prepare_shared.sh`
+  - `ops/release/build_release.sh`
+  - `ops/release/switch_current.sh`
+- 新增 release-mode LaunchAgents 模板与安装脚本：
+  - `ops/launchd/release/*.plist`
+  - `ops/launchd/install_release_current.sh`
+- 新增部署文档：`docs/RELEASE_DEPLOYMENT.md`
+
+## 20) Prod shared 去 symlink 化（降低 workspace 误操作风险）
+- `~/papertok-deploy/shared/.env` 迁移为真实文件（路径变量改到 deploy/shared/data）
+- `~/papertok-deploy/shared/data` 迁移为真实目录（workspace 原路径保留为指向 deploy 的 symlink 兼容层）
+- 受磁盘空间影响，`shared/venv` 暂时保留为 symlink（后续再做完整隔离）
+
+## 21) Dev 环境：全流程回归（冻结论文数据集）
+- 建议目录：`~/papertok-dev/repo` + `~/papertok-dev/shared/{.env,data,venv}`
+- 冻结数据集：`HF_TOP_N=0` + `DOWNLOAD_PDF=0`（不新增论文）
+- dev server 绑定本地端口（示例：`127.0.0.1:8001`）
+- 提供 dev 回归脚本：`ops/dev/run_full_pipeline_existing.sh`
+- Python 版本建议：3.13（macOS 上 3.14 可能触发 pydantic-core/PyO3 构建失败）

@@ -48,6 +48,36 @@ Switch `current` back to a previous release id and restart services:
 ops/release/switch_current.sh <old-release-id>
 ```
 
-## Notes
-- This workflow keeps `data/` and `.env` outside releases (symlinked), so state persists.
+## Phases (recommended)
+
+### Phase 1: Start with shared as symlinks (lowest risk)
+`ops/release/prepare_shared.sh` intentionally creates symlinks to your existing checkout:
+- `shared/.env -> <repo>/.env`
+- `shared/data -> <repo>/data`
+- `shared/venv -> <repo>/backend/.venv`
+
+This is the safest way to adopt Scheme B without moving state.
+
+### Phase 2: De-symlink shared (production hardening)
+After Scheme B proves stable, migrate shared to be **real files/directories** under `DEPLOY_ROOT/shared/`:
+- `shared/.env` becomes a real file (copied from old `.env`)
+- `shared/data` becomes a real directory (migrated from old `data/`)
+- optionally rebuild `shared/venv` as a real venv
+
+Benefits:
+- prod no longer depends on your dev/workspace checkout
+- reduces risk of accidental prod breakage when editing/cleaning workspace
+
+## Notes / Pitfalls
+
+### Python version (macOS)
+Prefer **Python 3.13** for venv creation.
+On macOS, Python 3.14 may fail installing `pydantic-core` due to Rust/PyO3 version checks.
+
+### Disk space
+Rebuilding a full venv with MinerU/torch/opencv is large.
+Before rebuilding `shared/venv`, ensure you have multiple GB of free space.
+
+### Current hardening status
+- `.env` and `data/` are designed to live outside releases.
 - For maximum isolation, replace `shared/venv` symlink with an independent venv.

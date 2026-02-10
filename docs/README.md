@@ -32,8 +32,10 @@
 20. [Android App 计划（阶段 1：仅公网 HTTPS）](./ANDROID_APP_PLAN.md)
 21. [App 内部安装指南（iOS/Android，本地签名/运行）](./APP_INTERNAL_RUNBOOK.md)
 22. [papertok.ai / papertok.net 上线步骤（Cloudflare Tunnel，无 VPS）](./DEPLOY_PAPERTOK_AI_NET_CLOUDFLARE.md)
-23. [Android APK 发布（给别人安装）](./ANDROID_APK_RELEASE.md)
-24. [安全模型（Defense in Depth）](./SECURITY.md)
+23. [Release 部署（Scheme B：releases + current 原子切换）](./RELEASE_DEPLOYMENT.md)
+24. [Dev 环境：全流程回归（冻结论文数据集）](./DEV_ENV_FROZEN_DATASET.md)
+25. [Android APK 发布（给别人安装）](./ANDROID_APK_RELEASE.md)
+26. [安全模型（Defense in Depth）](./SECURITY.md)
 
 ---
 

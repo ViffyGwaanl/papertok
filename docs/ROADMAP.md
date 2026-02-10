@@ -48,6 +48,16 @@
 
 ## P1（中期，1-2 周）：运维工程化
 
+0) **完成 Scheme B 最后一块隔离：prod `shared/venv`**
+- 用 Python 3.13 重建 `~/papertok-deploy/shared/venv`（避免 3.14 的 pydantic-core/PyO3 坑）
+- 安装依赖时建议 `PIP_NO_CACHE_DIR=1`，降低磁盘峰值
+- 增加磁盘空间检查（free space < 阈值直接 fail-fast）
+
+1) **Release 保留策略（防磁盘膨胀）**
+- 自动保留最近 N 个 releases，其余清理
+- 清理策略需保证：current 指向的 release 永不删除
+
+
 1) **备份/恢复策略**
 - 脚本化：备份 SQLite + 关键数据目录（pdf/mineru/gen/logs）
 - 提供“只备份 DB、衍生物可重算”的轻量模式

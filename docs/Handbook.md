@@ -56,12 +56,17 @@ npm install
 npm run build
 ```
 
-### 2.3 启动（推荐：launchd 核心 4 个）
-```bash
-cd papertok
-bash ops/launchd/install_core.sh
+### 2.3 启动（推荐：Scheme B release 部署）
 
-# 查看
+生产环境推荐使用 **Release-based Deployment（Scheme B）**：代码 immutable releases + `current` 原子切换。
+
+- 文档：`docs/RELEASE_DEPLOYMENT.md`
+- 一键安装 release-mode LaunchAgents：`ops/launchd/install_release_current.sh`
+
+> 仍可用 `ops/launchd/install_core.sh`（直接跑在当前 checkout）作为最简模式，但不推荐长期“边跑边改”。
+
+查看状态：
+```bash
 launchctl list | rg com\.papertok
 ```
 
@@ -97,9 +102,12 @@ bash ops/run_daily.sh
 - DB `paper_images` 表存两套 provider（seedream/glm）生成结果
 - Feed 卡片显示哪一套由 DB 配置 `paper_images_display_provider` 决定（seedream | glm | auto）
 
-### 3.4 No Fake Data / Feed 默认只显示已讲解
-- 默认配置 `feed_require_explain=True`
-- `/api/papers/random` 会过滤掉没有 `raw_text_path` 或 `content_explain_cn` 的论文
+### 3.4 No Fake Data / Feed 默认只显示“完成稿”
+- 默认配置（DB config）：
+  - `feed_require_explain=True`
+  - `feed_require_image_captions=True`
+  - `feed_require_generated_images=True`
+- `/api/papers/random` 会过滤掉不满足条件的论文（避免出现“只有讲解、没有图注/生成图”的半成品）
 
 ### 3.5 PDF 修复策略（保守）
 - **原始 PDF 不动**
@@ -140,6 +148,8 @@ bash ops/run_daily.sh
 ### 5.3 DB Config（Admin 可改）
 `GET/PUT /api/admin/config` 当前可调整：
 - `feed_require_explain`：Feed 是否只展示已讲解
+- `feed_require_image_captions`：Feed 是否要求图注已生成
+- `feed_require_generated_images`：Feed 是否要求生成图已生成（按 display provider）
 - `paper_images_display_provider`：seedream|glm|auto
 - `image_caption_context_chars / strategy / occurrences`：图注上下文策略
 
