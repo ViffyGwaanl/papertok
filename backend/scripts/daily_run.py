@@ -1342,6 +1342,12 @@ def main():
 
         for item in items:
             p = upsert_paper(session, item, day=effective_date)
+
+            # Ensure p.id is available before writing paper_events.
+            session.add(p)
+            session.commit()
+            session.refresh(p)
+
             if p.external_id:
                 active_external_ids.add(str(p.external_id))
 
