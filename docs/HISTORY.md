@@ -188,3 +188,33 @@
 - dev server 绑定本地端口（示例：`127.0.0.1:8001`）
 - 提供 dev 回归脚本：`ops/dev/run_full_pipeline_existing.sh`
 - Python 版本建议：3.13（macOS 上 3.14 可能触发 pydantic-core/PyO3 构建失败）
+
+## 22) ZH/EN 双语全链路（Schema + API + Pipeline + UI）
+- DB schema：
+  - `papers` 增加英文字段：`one_liner_en`、`content_explain_en`、`image_captions_en_json`
+  - `paper_images` 增加 `lang` 列（同一篇论文可同时有 `zh/en` 两套生成图）
+- API：
+  - `/api/papers/random` 与 `/api/papers/{id}` 增加 `lang=zh|en|both`
+  - Feed gating 语言化（方案 A）：
+    - `lang=en` 时只要求英文链路齐全（`*_en` + `PaperImage(lang='en')`）
+    - `lang=zh` 时只要求中文链路齐全
+- Pipeline：
+  - one-liner / explain / captions / images 全部按 `lang` 生成并写回对应字段
+  - 生图产物路径按语言分目录：`/static/gen_glm/<external_id>/<lang>/...`
+
+## 23) 任务队列（Jobs）双语化 + 并发控制
+- 新增 scoped/regen 任务（均支持指定 day/lang/external_ids）：
+  - `one_liner_scoped` / `one_liner_regen_scoped`
+  - `content_analysis_scoped` / `content_analysis_regen_scoped`
+  - `image_caption_scoped` / `image_caption_regen_scoped`
+  - `paper_images_scoped` / `paper_images_regen_scoped`
+- 图注任务增加并发参数：`IMAGE_CAPTION_CONCURRENCY`（避免 VLM 429，并提升吞吐）
+
+## 24) 前端：内容语言切换 + UI 文案 i18n（Web）
+- 右上角增加 `中文/EN` 内容切换（持久化到 `localStorage('papertok:contentLang')`）
+- 修复语言切换“必须刷新才生效”的竞态（丢弃旧语言 in-flight 请求结果）
+- 详情弹窗按钮/标签（讲解/原文/图片/页面/关闭/图注/加载中…）随语言切换
+
+## 25) 线上回归（latest day 2026-02-10）
+- 英文链路补齐：`one_liner_en`、`content_explain_en`、`image_captions_en_json`、英文生成图（GLM）
+- 英文生成图完成：10 篇 × 3 张 = 30 张（`PAPER_IMAGES_GENERATE_ONLY_DISPLAY=1` 节省成本）

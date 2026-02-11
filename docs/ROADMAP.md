@@ -8,6 +8,7 @@
 - **已修复**：公网/移动端同源加载（前端默认使用 `window.location.origin`；不再硬编码 `:8000`）。
 - **已落地**：前端 `API_BASE` 单点真理（`src/lib/apiBase.ts`），避免 WebView/同源/localhost 分叉。
 - **已验收**：iOS/Android Capacitor internal build 已在真机安装运行（本地 Xcode/Android Studio）。
+- **已落地**：ZH/EN 双语链路（schema + API `lang=zh|en|both` + pipeline + Web UI `中文/EN` 切换），并完成 latest day 英文端到端回归。
 - **S0 安全收口完成**：
   - `GET /api/status` 变为公共摘要（不含本机路径/日志路径/敏感运维信息）
   - 新增 `GET /api/admin/status`（管理版）
@@ -18,31 +19,36 @@
 
 ## P0（短期，1-3 天）：稳定性/体验收尾
 
-1) **前端可诊断性（Loading 卡住时能自救）**
-- 在 UI 上显示更明确的错误态（比如“请求失败/网络错误/权限被拦截”），并提供一键重试
-- 对 `/api/papers/random` 与 `/api/papers/{id}` 增加超时 + 重试策略（有限次数）
+1) **Cloudflare：强制 HTTPS（安全必做）**
+- 在 Cloudflare 开启 *Always Use HTTPS*（或等价 Redirect Rule）
+- 验收：`curl -I http://papertok.ai/` 应返回 `301/308` → `https://papertok.ai/...`
+
+2) **双语生产回填（让 EN 真正“可用”）**
+- latest day 已完成 EN 端到端（one-liner/explain/caption/images）；下一步选择回填范围：
+  - A) 最近 7/30 天
+  - B) 全量历史（成本较高，需限速/排队）
+- 为回填建立标准作业：按 `day`/`lang` 分批 enqueue（避免全库一次性跑崩）
+
+3) **前端可诊断性（Loading 卡住时能自救）**
+- 在 UI 上显示更明确的错误态（请求失败/权限被拦截/离线缓存命中），并提供一键重试
+- 对 `/api/papers/random` 与 `/api/papers/{id}` 增加超时 + 有限次数重试
 - 在详情弹窗里区分：讲解缺失 vs 请求失败
 
-2) **Jobs 兜底操作（运维必备）**
+4) **Jobs 兜底操作（运维必备）**
 - Admin 增加：
   - cancel queued job
   - mark running → failed（人工止血）
 - worker stale job 策略进一步明确：超时阈值、重试次数、是否允许并发
 
-3) **/api/status 语义优化**
+5) **/api/status 语义优化**
 - 现在 `failed_by_stage` 是历史累计；建议补一个“当前未解决失败”视图：
   - per paper 只取最近一次事件，或用 DB 缺失字段作为“当前状态”
 - 面板上减少“历史失败把人吓到”的噪声
 
-4) **MinerU warning 噪声治理**
-- 处理 `cv2` 与 `av` dylib duplicate class 警告，降低“神秘崩溃”风险
-
-5) **Internal 分发/打包（可选，但能显著降低安装成本）**
-- iOS：补一份“Archive → Export .ipa（Development）→ 安装”的 runbook（不等同于永久分发；Personal Team 仍会过期）
-- Android：输出 debug APK / release APK（签名与版本号策略），便于不依赖 Android Studio 安装
-- 若决定给多人分发：
-  - iOS：Apple Developer Program + TestFlight
-  - Android：Play 内测 / 直接分发 APK
+6) **Internal 分发/打包（让 App 跟上 Web 功能）**
+- 结论：App 壳不会自动更新 Web 前端；每次前端变更都需要重新打包/发布。
+- iOS：补齐 “Archive → TestFlight” 或 “Development .ipa” 的 runbook
+- Android：完成 release 签名 APK 的 keystore 配置，并出一个带 ZH/EN 切换的新 APK（`versionCode` 递增）
 
 ---
 
@@ -57,23 +63,22 @@
 - 自动保留最近 N 个 releases，其余清理
 - 清理策略需保证：current 指向的 release 永不删除
 
-
-1) **备份/恢复策略**
+2) **备份/恢复策略**
 - 脚本化：备份 SQLite + 关键数据目录（pdf/mineru/gen/logs）
 - 提供“只备份 DB、衍生物可重算”的轻量模式
 
-2) **配置健康检查（自检面板）**
+3) **配置健康检查（自检面板）**
 - `/api/status` 增加 health checklist：
   - LLM/VLM endpoint 可达？
   - Seedream/GLM key 是否存在？
   - MinerU CLI 是否存在？
   - 磁盘剩余空间、日志目录可写？
 
-3) **更强的 Admin/Ops**
+4) **更强的 Admin/Ops**
 - 失败重试模板化（按 stage 一键重试）
 - 支持按 `external_id` 搜索、按 stage 过滤、按 day 聚合
 
-4) **公网入口的进一步防护（可选）**
+5) **公网入口的进一步防护（可选）**
 - Cloudflare WAF/Rate limit（尤其对 `/api/papers/*`）
 - 只要未来开放写入（点赞/收藏/评论等），必须先做 CSRF/鉴权设计
 

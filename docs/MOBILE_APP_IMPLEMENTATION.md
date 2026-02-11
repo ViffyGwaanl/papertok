@@ -82,6 +82,9 @@ Android：
 - iOS：`npm run cap:sync:ios`
 - Android：`npm run cap:sync:android`
 
+> 注意：App 壳里打包的是当时 build 出来的 `dist/`。
+> 每次前端功能更新（例如 ZH/EN 切换、UI 文案 i18n）都需要重新 `cap sync` 并重新安装/发布新包，已安装的 App 不会自动更新。
+
 4) 打开原生工程
 - iOS：`npm run cap:open:ios`
 - Android：`npm run cap:open:android`

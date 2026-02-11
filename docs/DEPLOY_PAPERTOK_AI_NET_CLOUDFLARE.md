@@ -82,7 +82,26 @@ brew services list | rg cloudflared
 
 ---
 
-## 4) PaperTok 侧安全配置（强烈建议）
+## 4) Cloudflare：强制 HTTPS（必须）
+
+> 结论：即使你有 Cloudflare Access，**也必须禁用/跳转 HTTP**。
+> 因为 HTTP 明文可被窃听/篡改，且会暴露 Access cookie / Admin Token 等敏感信息。
+
+在 Cloudflare Dashboard（papertok.ai 这个 zone）：
+- **SSL/TLS → Edge Certificates → Always Use HTTPS = ON**
+
+（可选，稳定后再开）HSTS：
+- 同页面开启 HSTS，要求你非常确定永远只用 HTTPS（开错回滚麻烦）。
+
+验收：
+```bash
+curl -I http://papertok.ai/
+```
+期望看到：`301/308` + `Location: https://papertok.ai/...`
+
+---
+
+## 5) PaperTok 侧安全配置（强烈建议）
 
 因为 Tunnel 会把你的服务暴露到公网，建议至少做两层保护。
 
@@ -104,7 +123,7 @@ PAPERTOK_ALLOWED_CIDRS=*
 
 ---
 
-## 5) Cloudflare Access（Zero Trust：只限制 Admin）
+## 6) Cloudflare Access（Zero Trust：只限制 Admin）
 
 目标：主站公开访问，但 **Admin UI** 和 **Admin API** 仅允许指定邮箱账号登录。
 
@@ -172,7 +191,7 @@ curl -I https://papertok.net/admin
 
 ---
 
-## 6) 验收
+## 7) 验收
 
 外网执行（或手机 5G）：
 
@@ -194,7 +213,7 @@ PAPERTOK_PUBLIC_BASE_URLS="https://papertok.ai,https://papertok.net" \
 
 ---
 
-## 7) 回滚
+## 8) 回滚
 
 - 停 tunnel：`brew services stop cloudflared`
 - 删除 DNS route：在 Cloudflare DNS 中删除 `papertok.ai` / `papertok.net` 记录

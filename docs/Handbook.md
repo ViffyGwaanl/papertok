@@ -1,6 +1,6 @@
 # PaperTok Handbook（工程化说明书）
 
-> 版本：2026-02-08（持续更新；涵盖：Cloudflare Tunnel/Access 公网入口、域名规范化、移动端同源加载修复等）
+> 版本：2026-02-11（持续更新；涵盖：Cloudflare Tunnel/Access、公网入口、域名规范化、移动端同源加载修复、ZH/EN 双语链路等）
 
 ## 1) 总体概览
 
@@ -10,8 +10,9 @@ PaperTok 是一个本地部署的“论文版 TikTok/WikiTok”应用：
 - 每天抓取 Hugging Face Daily Papers **当天 Top10**
 - 下载 arXiv PDF
 - 使用 **MinerU CLI** 本地解析 PDF → markdown + 抽图
-- 用 LLM 生成中文教学式讲解（`content_explain_cn`）
-- 用 VLM 给抽取图片生成中文图注（缓存到 DB）
+- 用 LLM 生成教学式讲解（中文 `content_explain` + 英文 `content_explain_en`）
+- 用 VLM 给抽取图片生成图注（中文 `image_captions_json` + 英文 `image_captions_en_json`）
+- 前端支持内容语言切换（右上角 `中文/EN`）
 - 同时用两家图像模型生成“实体手工剪贴簿/杂志拼贴”风格竖屏图：**Seedream + GLM-Image**
 - 后端 FastAPI 提供 API，并托管前端 `dist/`，手机端竖滑浏览
 
@@ -127,8 +128,8 @@ bash ops/run_daily.sh
 - `data/logs/`：所有 launchd/job 的日志
 
 ### 4.2 主要数据表（概念级）
-- `papers`：论文主表（含 day、pdf_path、raw_text_path、content_explain_cn、image_captions_json…）
-- `paper_images`：生成图/抽图（这里主要用 generated + provider + order_idx）
+- `papers`：论文主表（含 day、pdf_path、raw_text_path、one_liner/one_liner_en、content_explain/content_explain_en、image_captions_json/image_captions_en_json…）
+- `paper_images`：生成图/抽图（主要字段：kind/provider/lang/order_idx/url_path；`lang` 区分 zh/en）
 - `paper_events`：可观测性事件（stage: pdf/mineru/pdf_repair/explain/caption/paper_images；status: started/success/failed/skipped）
 - `jobs`：后台任务队列（queued/running/success/failed）
 - `app_settings`：DB 配置（Admin 可改）
@@ -144,6 +145,13 @@ bash ops/run_daily.sh
 ### 5.2 `.env`（单一事实源）
 - 后端启动、ops 脚本、launchd 统一读取 `papertok/.env`
 - 参考模板：`papertok/.env.example`
+
+常用关键项（节选）：
+- `OPENAI_BASE_URL` / `LLM_MODEL_TEXT` / `LLM_MODEL_ANALYSIS`：文本模型（本机 OpenAI-compatible endpoint）
+- `IMAGE_CAPTION_MODEL`：VLM 图注模型
+- `PAPERTOK_LANGS=zh,en`：启用双语生成（影响 one-liner/explain/caption/images）
+- `PAPER_IMAGES_DISPLAY_PROVIDER` + `PAPER_IMAGES_GENERATE_ONLY_DISPLAY=1`：只生成展示用 provider（控成本）
+- `IMAGE_CAPTION_CONCURRENCY`：图注任务内部并发（需根据 `localhost:3003` 的限流调参）
 
 ### 5.3 DB Config（Admin 可改）
 `GET/PUT /api/admin/config` 当前可调整：
@@ -161,10 +169,13 @@ bash ops/run_daily.sh
 - `GET /healthz` → `{ok: true}`
 
 ### 6.2 Feed / 论文
-- `GET /api/papers/random?limit=20&day=latest|YYYY-MM-DD|all`
-  - 默认：按 DB config 过滤未讲解论文（可关闭）
-- `GET /api/papers/{id}`
-  - 详情包含 `content_explain_cn`、`raw_markdown_url`、抽取图片、图注、两家生成图
+- `GET /api/papers/random?limit=20&lang=zh|en|both&day=latest|YYYY-MM-DD|all`
+  - `lang` 控制返回哪种语言的内容（默认 `zh`）
+  - Feed gating **按当前语言**判断完成稿（方案 A）：
+    - `lang=en` 时只要求英文链路齐全
+    - `lang=zh` 时只要求中文链路齐全
+- `GET /api/papers/{id}?lang=zh|en|both`
+  - 详情会按 `lang` 返回对应语言的 one-liner / explain / captions / generated images（以及 MinerU markdown/抽图等）
 
 ### 6.3 状态与运维观测
 - **Public（可公开）**
@@ -197,9 +208,10 @@ bash ops/run_daily.sh
 2) 下载 PDF
 3) MinerU 解析
    - 失败后可选触发 pdf_repair（qpdf/mutool/gs）→ 使用缓存副本重试
-4) explain：生成 `content_explain_cn`
-5) caption：抽图图注（带 markdown 上下文窗口）
-6) paper_images：两家各生成 N 张（默认 3）
+4) one_liner：生成一句话卡片文案（`one_liner` / `one_liner_en`）
+5) explain：生成讲解（`content_explain` / `content_explain_en`）
+6) caption：抽图图注（`image_captions_json` / `image_captions_en_json`，带 markdown 上下文窗口）
+7) paper_images：按语言生成竖屏配图（`paper_images.lang in {zh,en}`；可配置只生成 display provider 以控成本）
 
 ### 7.2 事件体系（paper_events）
 - 每个 stage 会写 started/success/failed
@@ -216,11 +228,28 @@ bash ops/run_daily.sh
 - 每个 job 对应一个独立日志文件：`data/logs/job_<id>_<type>.log`
 
 ### 8.2 已支持的 job_type（Admin 页面可直接入队）
-- `image_caption_scoped`：补齐缺失图注（按 scope）
-- `image_caption_regen_scoped`：wipe+重生成图注（按 scope）
-- `paper_images_glm_backfill`：补齐所有论文的 GLM 生图
-- `paper_events_backfill`：为当前 DB 状态补齐 paper_events 标记（skipped/success）
-- `paper_retry_stage`：对某篇论文重试某个 stage（pdf/mineru/explain/caption/paper_images）
+> 说明：scoped/regen 任务支持按 `day` / `external_ids` / `lang` 精准控制，避免全库重跑。
+
+- one-liner
+  - `one_liner_scoped`：补齐缺失的一句话文案
+  - `one_liner_regen_scoped`：wipe+重生成一句话文案
+
+- explain（讲解）
+  - `content_analysis_scoped`：补齐缺失讲解
+  - `content_analysis_regen_scoped`：wipe+重生成讲解
+
+- captions（图注）
+  - `image_caption_scoped`：补齐缺失图注（支持并发参数 `image_caption_concurrency`）
+  - `image_caption_regen_scoped`：wipe+重生成图注
+
+- generated images（生图）
+  - `paper_images_scoped`：补齐缺失生成图
+  - `paper_images_regen_scoped`：wipe+重生成生成图
+  - （legacy）`paper_images_glm_backfill`：全库补齐 GLM 生图（成本高，谨慎）
+
+- observability / repair
+  - `paper_events_backfill`：为当前 DB 状态补齐 paper_events 标记（skipped/success）
+  - `paper_retry_stage`：对某篇论文重试某个 stage（pdf/mineru/one_liner/explain/caption/paper_images）
 
 ### 8.3 Worker 行为
 - launchd `com.papertok.job_worker` 每 60s 运行一次 worker（poll N 个 job）
@@ -315,9 +344,10 @@ bash ops/launchd/prune_optional.sh
 
 处理顺序（从轻到重）：
 1) 用无痕窗口打开（最常用）：`/` 或 `/admin`
-2) URL 加版本号强制刷新：`https://papertok.ai/?v=3`（随便换个数字即可；别名用 `https://papertok.net/?v=3`）
-3) iOS：设置 → Safari → 高级 → 网站数据 → 删除 `papertok.ai`（如使用别名，也删除 `papertok.net`）
-4) 如果是“添加到主屏幕”的 PWA：删除桌面图标后重新添加
+2) 强刷（桌面端）：`Cmd+Shift+R`
+3) URL 加版本号强制刷新：`https://papertok.ai/?v=3`（随便换个数字即可；别名用 `https://papertok.net/?v=3`）
+4) iOS：设置 → Safari → 高级 → 网站数据 → 删除 `papertok.ai`（如使用别名，也删除 `papertok.net`）
+5) 如果是“添加到主屏幕”的 PWA：删除桌面图标后重新添加
 
 ### 11.4 worker job 卡住 running
 - 当前做法：避免 kickstart -k 杀进程；worker 内也有 stale 处理（如果你再遇到可继续增强）

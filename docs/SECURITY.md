@@ -29,6 +29,9 @@ PaperTok 推荐把防护拆成 4 层（从外到内）：
 
 ### L1：Cloudflare（边缘层）
 - **Cloudflare Tunnel**：由本机主动建立到 Cloudflare 的出站连接；无需开端口映射。
+- **强制 HTTPS（必须）**：开启 Cloudflare 的 *Always Use HTTPS*（或等价的 Redirect Rule），确保 `http://` 永远重定向到 `https://`。
+  - 原因：HTTP 明文可被窃听/篡改；对 Access cookie / Admin Token 尤其危险。
+  - 验收：`curl -I http://papertok.ai/` 应返回 `301/308` 且 `Location: https://papertok.ai/...`。
 - 可选：WAF / Rate limiting（当访问量上来或被扫时再加）。
 
 ### L2：Cloudflare Access（身份层）

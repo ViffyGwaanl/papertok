@@ -42,6 +42,11 @@ cd papertok
 ops/release/switch_current.sh <release-id>
 ```
 
+Notes:
+- 尽量避免在**长耗时 jobs 正在运行**时切换（例如英文/中文生图、全量图注回填）。
+  - 切换会重启 server/worker，可能导致当前 running job 中断或重复。
+  - 推荐做法：先让队列跑空/关键 job 完成，再原子切换。
+
 ## Rollback
 Switch `current` back to a previous release id and restart services:
 ```bash
@@ -77,6 +82,10 @@ On macOS, Python 3.14 may fail installing `pydantic-core` due to Rust/PyO3 versi
 ### Disk space
 Rebuilding a full venv with MinerU/torch/opencv is large.
 Before rebuilding `shared/venv`, ensure you have multiple GB of free space.
+
+Also note:
+- `DEPLOY_ROOT/releases/*` 会持续累积（每次 build_release 都会生成一个新目录）。
+- 建议制定保留策略：只保留最近 N 个 release，且永不删除 `current` 指向的版本。
 
 ### Current hardening status
 - `.env` and `data/` are designed to live outside releases.
