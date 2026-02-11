@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { WikiArticle } from "../components/WikiCard";
 
 import { API_BASE, apiUrl } from "../lib/apiBase";
@@ -14,11 +14,20 @@ const preloadImage = (src: string): Promise<void> => {
   });
 };
 
-export function useWikiArticles() {
+export function useWikiArticles(opts?: { lang?: string }) {
+  const lang0 = (opts?.lang || "zh").toLowerCase() === "en" ? "en" : "zh";
+
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [buffer, setBuffer] = useState<WikiArticle[]>([]);
   const [offlineMode, setOfflineMode] = useState(false);
+
+  // When language changes, reset feed so we don't mix languages.
+  useEffect(() => {
+    setArticles([]);
+    setBuffer([]);
+    setOfflineMode(false);
+  }, [lang0]);
 
   const fetchArticles = async (forBuffer = false) => {
     if (loading) return;
@@ -32,7 +41,7 @@ export function useWikiArticles() {
       // ignore
     }
 
-    const qs = new URLSearchParams({ limit: "20" });
+    const qs = new URLSearchParams({ limit: "20", lang: lang0 });
     const urlPath = `/api/papers/random?${qs.toString()}`;
     const fullUrl = apiUrl(urlPath);
     const cacheKey = `papertok:feed:last:${qs.toString()}`;
@@ -91,5 +100,5 @@ export function useWikiArticles() {
     }
   }, [buffer]);
 
-  return { articles, loading, offlineMode, fetchArticles: getMoreArticles };
+  return { articles, loading, offlineMode, fetchArticles: getMoreArticles, lang: lang0, setArticles };
 }

@@ -10,7 +10,17 @@ import { useWikiArticles } from "./hooks/useWikiArticles";
 function MainPage() {
   const [showAbout, setShowAbout] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
-  const { articles, loading, offlineMode, fetchArticles } = useWikiArticles();
+
+  const [contentLang, setContentLang] = useState<'zh' | 'en'>(() => {
+    const saved = (localStorage.getItem('papertok:contentLang') || 'zh').toLowerCase();
+    return saved === 'en' ? 'en' : 'zh';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('papertok:contentLang', contentLang);
+  }, [contentLang]);
+
+  const { articles, loading, offlineMode, fetchArticles } = useWikiArticles({ lang: contentLang });
   const { likedArticles, toggleLike } = useLikedArticles();
   const observerTarget = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,7 +50,7 @@ function MainPage() {
 
   useEffect(() => {
     fetchArticles();
-  }, []);
+  }, [contentLang]);
 
   const filteredLikedArticles = likedArticles.filter(
     (article) =>
@@ -98,7 +108,13 @@ function MainPage() {
         >
           Likes
         </button>
-        {/* LanguageSelector removed in PaperTok build */}
+        <button
+          onClick={() => setContentLang(contentLang === 'zh' ? 'en' : 'zh')}
+          className="text-sm text-white/70 hover:text-white transition-colors"
+          title="Switch language"
+        >
+          {contentLang === 'zh' ? '中文' : 'EN'}
+        </button>
       </div>
 
       {showAbout && (
@@ -219,7 +235,7 @@ function MainPage() {
       )}
 
       {articles.map((article) => (
-        <WikiCard key={article.pageid} article={article} />
+        <WikiCard key={article.pageid} article={article} lang={contentLang} />
       ))}
       <div ref={observerTarget} className="h-10 -mt-1" />
       {loading && (

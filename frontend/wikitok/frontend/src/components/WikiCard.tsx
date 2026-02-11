@@ -35,7 +35,9 @@ type PaperDetail = {
     url?: string | null;
     thumbnail_url?: string | null;
     one_liner?: string | null;
+    content_explain?: string | null;
     content_explain_cn?: string | null;
+    content_explain_en?: string | null;
     pdf_url?: string | null;
     pdf_local_url?: string | null;
     raw_markdown_url?: string | null;
@@ -45,9 +47,10 @@ type PaperDetail = {
 
 interface WikiCardProps {
     article: WikiArticle;
+    lang?: 'zh' | 'en';
 }
 
-export function WikiCard({ article }: WikiCardProps) {
+export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [carouselIndex, setCarouselIndex] = useState(0);
     const carouselRef = useRef<HTMLDivElement | null>(null);
@@ -87,10 +90,10 @@ export function WikiCard({ article }: WikiCardProps) {
         // Always refetch so long-running background jobs (e.g. image captions) can show up.
         setDetailLoading(true);
         try {
-            const url = apiUrl(`/api/papers/${article.pageid}`);
+            const url = apiUrl(`/api/papers/${article.pageid}?lang=${lang}`);
             const { data: j, fromCache } = await fetchJsonWithOfflineCache<PaperDetail>(
                 url,
-                `papertok:paper_detail:${article.pageid}`,
+                `papertok:paper_detail:${article.pageid}:lang=${lang}`,
                 { maxAgeMs: 1000 * 60 * 60 * 24 * 7, fetchTimeoutMs: 12000 }
             );
             if (fromCache) {
@@ -111,7 +114,7 @@ export function WikiCard({ article }: WikiCardProps) {
         try {
             const { text: t, fromCache } = await fetchTextWithOfflineCache(
                 detailMarkdownUrl,
-                `papertok:paper_markdown:${detail?.id || article.pageid}`,
+                `papertok:paper_markdown:${detail?.id || article.pageid}:lang=${lang}`,
                 { maxAgeMs: 1000 * 60 * 60 * 24 * 7, fetchTimeoutMs: 15000 }
             );
             if (fromCache && !detailError) {
@@ -413,7 +416,7 @@ export function WikiCard({ article }: WikiCardProps) {
                                                     ),
                                                 }}
                                             >
-                                                {detail.content_explain_cn || '（暂无讲解）'}
+                                                {detail.content_explain || detail.content_explain_cn || detail.content_explain_en || '（暂无讲解）'}
                                             </ReactMarkdown>
                                         </div>
                                     </div>
