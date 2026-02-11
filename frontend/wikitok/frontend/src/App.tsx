@@ -115,6 +115,7 @@ function MainPage() {
               A TikTok-style interface for exploring daily trending AI/ML papers.
             </p>
             <p className="text-white/70">Author: Gwaanl</p>
+            <p className="text-white/70">公众号：书同文Suwin</p>
             <p className="text-white/70 mt-2">
               PaperTok — a local MVP for browsing trending AI/ML papers.
             </p>

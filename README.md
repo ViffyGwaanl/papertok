@@ -1,11 +1,16 @@
 # PaperTok (MVP)
 
-目标：本地部署 PaperTok —— 每天抓取 Hugging Face Daily Papers **当天 Top10**，离线跑完整流水线（PDF → MinerU → 讲解 → 图注 → Seedream+GLM 杂志拼贴图 → one-liner），并用 WikiTok 风格的无限竖滑来浏览。
+目标：本地部署 PaperTok —— 每天抓取 Hugging Face Daily Papers **当天 Top10**，离线跑完整流水线（PDF → MinerU → 讲解 → 图注 → 竖屏杂志拼贴图 → one-liner），并用 WikiTok 风格的无限竖滑来浏览。
 
 ## 文档（推荐先读）
 - 总文档/运维手册：`papertok/docs/Handbook.md`
 - 项目历史（我们已经做过什么）：`papertok/docs/HISTORY.md`
 - Roadmap（未来计划）：`papertok/docs/ROADMAP.md`
+
+## 公众号
+**书同文Suwin**
+
+![书同文Suwin 公众号二维码](docs/assets/mp_suwin_qr.jpg)
 
 ## 当前已经做了什么（现状）
 - ✅ FastAPI + SQLite（SQLModel）后端
@@ -27,7 +32,7 @@
   - MinerU：PDF → markdown + extracted images（挂载 `/static/mineru`）
   - 讲解：从 MinerU markdown 生成中文教学式讲解（`content_explain_cn`）
   - 图片图注：对 MinerU 抽取图片做 VLM caption（缓存到 `image_captions_json`）
-  - 杂志拼贴图：Seedream / GLM-Image 生成 3 张/篇（`paper_images` 表 + `/static/gen` & `/static/gen_glm`），首页卡片支持横向轮播
+  - 杂志拼贴图：GLM-Image（以及可选的第二图像提供方）生成 3 张/篇（`paper_images` 表 + `/static/gen` & `/static/gen_glm`），首页卡片支持横向轮播
 - ✅ PWA 的 Service Worker 已修：打开 `/static/*` 不会被错误 fallback 到首页
 - ✅ Capacitor 构建模式（`vite build --mode capacitor`）默认禁用 PWA/SW，避免 WebView 缓存干扰
 - ✅ 移动端/公网同源加载修复：前端默认使用 `window.location.origin` 访问 API（不再硬编码 `:8000`）
