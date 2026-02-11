@@ -66,8 +66,12 @@ def wipe_captions(
         q += " AND day = :day"
         params["day"] = day
 
-    r = session.exec(text(q), params)
-    session.commit()
+    # SQLModel Session.exec does not support params in some versions; use a raw connection.
+    from app.db.engine import engine
+
+    with engine.connect() as conn:
+        r = conn.execute(text(q), params)
+        conn.commit()
 
     # rowcount may be -1 for some drivers; best-effort
     try:

@@ -47,8 +47,11 @@ def wipe_explain(session: Session, *, day: str | None, external_ids: list[str] |
         q += " AND day = :day"
         params["day"] = day
 
-    r = session.exec(text(q), params)
-    session.commit()
+    from app.db.engine import engine
+
+    with engine.connect() as conn:
+        r = conn.execute(text(q), params)
+        conn.commit()
 
     try:
         return int(getattr(r, "rowcount", 0) or 0)

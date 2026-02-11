@@ -97,8 +97,11 @@ def wipe_paper_images(
         params["lang"] = lang_list[0]
 
     q_del = "DELETE FROM paper_images WHERE " + " AND ".join(cond)
-    r = session.exec(text(q_del), params)
-    session.commit()
+    from app.db.engine import engine
+
+    with engine.connect() as conn:
+        r = conn.execute(text(q_del), params)
+        conn.commit()
 
     # wipe disk (best-effort)
     # determine out_root(s)
