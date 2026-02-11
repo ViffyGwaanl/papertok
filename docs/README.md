@@ -1,5 +1,7 @@
 # PaperTok 文档索引（Handbook）
 
+[中文](./README.md) | [English](./en/README.md)
+
 > 适用场景：本地在 Mac mini 上长期运行 PaperTok（后端单服务托管前端），每天抓取 Hugging Face Daily Papers 当天 Top10，离线跑完整流水线，并提供 Admin/Ops 面板用于运维。
 
 ## 快速事实（TL;DR）

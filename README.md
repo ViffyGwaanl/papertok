@@ -1,5 +1,7 @@
 # PaperTok (MVP)
 
+[中文](./README.md) | [English](./README.en.md)
+
 目标：本地部署 PaperTok —— 每天抓取 Hugging Face Daily Papers **当天 Top10**，离线跑完整流水线（PDF → MinerU → 讲解 → 图注 → 竖屏杂志拼贴图 → one-liner），并用 WikiTok 风格的无限竖滑来浏览。
 
 ## 文档（推荐先读）
