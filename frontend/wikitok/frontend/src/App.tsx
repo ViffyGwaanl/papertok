@@ -132,6 +132,9 @@ function MainPage() {
             </p>
             <p className="text-white/70">Author: Gwaanl</p>
             <p className="text-white/70">公众号：书同文Suwin</p>
+            <p className="text-white/70">
+              GitHub: <a className="underline hover:text-white" href="https://github.com/ViffyGwaanl/papertok" target="_blank" rel="noreferrer">https://github.com/ViffyGwaanl/papertok</a>
+            </p>
             <p className="text-white/70 mt-2">
               PaperTok — a local MVP for browsing trending AI/ML papers.
             </p>
