@@ -218,3 +218,19 @@
 ## 25) 线上回归（latest day 2026-02-10）
 - 英文链路补齐：`one_liner_en`、`content_explain_en`、`image_captions_en_json`、英文生成图（GLM）
 - 英文生成图完成：10 篇 × 3 张 = 30 张（`PAPER_IMAGES_GENERATE_ONLY_DISPLAY=1` 节省成本）
+
+## 26) 回填编排：最近 7 天双语补齐 + “完成验收”监控
+- 增加回填入队脚本：`ops/backfill/run_bilingual_backfill_last7_days.sh`
+- 增加按天验收监控脚本：`ops/backfill/monitor_day_completion.py`
+  - 严格 8 指标：zh/en one-liner、zh/en explain、zh/en caption、glm/seedream images total
+  - 仅当某天“达标”才输出报告，并用 state file 避免重复通知
+
+## 27) Android 发布链路打通（GitHub Releases）
+- 已通过 `gh release create` 发布 internal build APK（含 `.sha256`）
+- 记录了 macOS iCloud Drive/File Provider 目录的限制：
+  - 在 `~/Library/Mobile Documents/...`（例如“互传”）下可能出现 `Resource deadlock avoided`，导致后台进程无法读取/上传
+  - 解决：先将 APK/sha256 拷贝到本地非 iCloud 目录（如 `~/Downloads/` 或 `exports/android/`）再发布
+
+## 28) 移动端语言切换竞态修复（App 友好）
+- 修复“切到 EN 后外层卡片 one-liner 仍显示中文，但弹窗/按钮已是英文”的问题
+- 技术要点：语言切换时原子清空 feed + 按 generation 管控 in-flight 请求与 loading 状态 + 离线缓存 key 按语言隔离

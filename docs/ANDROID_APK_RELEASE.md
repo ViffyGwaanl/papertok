@@ -84,6 +84,9 @@ bash ops/build_android_release_apk.sh
 - 可写 release notes（版本、变更点、已知问题）
 - 可附带 sha256 校验，收包的人能验证文件未被篡改
 
+建议把 **GitHub Releases 页面** 作为唯一分发入口：
+- https://github.com/ViffyGwaanl/papertok/releases
+
 ### 6.1 选择 tag 命名
 
 推荐格式（时间戳为主，简单稳定）：
@@ -117,6 +120,18 @@ gh release create "$TAG" \
 ```
 
 发布后，把 Release 页面链接发给对方即可。
+
+### 6.2.1 iCloud/互传目录注意事项（重要）
+
+如果你的 APK 放在 iCloud Drive / File Provider 管理的目录（例如：
+`~/Library/Mobile Documents/com~apple~CloudDocs/互传`），有概率出现 **“能看到文件，但后台进程读取内容失败”** 的情况，典型报错：
+- `OSError: [Errno 11] Resource deadlock avoided`
+
+这会导致：`cp/ditto/gh release create` 上传时读文件失败。
+
+**解决办法**：先用 Finder 拖拽（或在终端拷贝）把 `*.apk` 和 `*.apk.sha256` 复制到一个“本地非 iCloud”的路径再上传，例如：
+- `~/Downloads/`
+- `papertok/exports/android/`
 
 ### 6.3 收包的人如何校验 sha256（可选但推荐）
 

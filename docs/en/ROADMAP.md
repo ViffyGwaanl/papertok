@@ -10,7 +10,9 @@
 - ✅ Same-origin on mobile/public: frontend uses `window.location.origin` (no hard-coded `:8000`).
 - ✅ `API_BASE` single source of truth: `src/lib/apiBase.ts`.
 - ✅ iOS/Android Capacitor internal build runs on real devices.
+- ✅ Android release APK distribution via GitHub Releases (+ `.sha256`), with an ops note about iCloud Drive/File Provider paths possibly failing background reads (`Resource deadlock avoided`).
 - ✅ ZH/EN bilingual pipeline (schema + `lang=zh|en|both` API + pipeline + Web UI toggle) and EN end-to-end regression for latest day.
+- ✅ Native-app-friendly language toggle fix (feed refresh path); requires rebuilding the app shell to take effect.
 - ✅ S0 security hardening:
   - `/api/status` is public summary (no local paths/log paths)
   - `/api/admin/status` is admin-only
@@ -26,7 +28,9 @@
 - Verify: `curl -I http://papertok.ai/` → `301/308` → `https://...`
 
 2) **Bilingual production backfill (make EN truly usable)**
-- Latest day EN is complete; decide backfill scope:
+- Latest day EN is complete.
+- Added a per-day acceptance monitor (strict 8-metric criteria; only reports when a day is fully complete) to reduce noise and make progress auditable.
+- Decide backfill scope:
   - A) last 7/30 days
   - B) full history (higher cost; must throttle/queue)
 - Standard operating procedure: enqueue by `day`/`lang` batches (avoid “run all” in one shot)
@@ -49,7 +53,8 @@
 6) **Internal distribution (keep apps in sync with web)**
 - App shells do not auto-update web assets; every frontend change requires rebuilding/releasing a new app build.
 - iOS: runbook for Archive → TestFlight or Development `.ipa`
-- Android: keystore config + publish a new signed release APK with ZH/EN toggle (`versionCode` bump)
+- Android: signed release APK + GitHub Releases
+  - Avoid uploading from iCloud Drive/File Provider folders; copy assets to a local folder first.
 
 ---
 

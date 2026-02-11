@@ -32,7 +32,9 @@ npm run cap:sync:android
 
 **Important:** the app shell bundles the `dist/` assets at build time.
 Web updates do **not** automatically update already-installed apps.
-To get new features (e.g. the `中文/EN` toggle), you must rebuild and reinstall / publish a new APK/TestFlight build.
+To get new features, you must rebuild and reinstall / publish a new APK/TestFlight build.
+
+If you see: UI labels/modal switched to English but the feed card one-liner is still Chinese after toggling language, you are likely on an older build. Install a newer app build that includes the language-toggle race fix.
 
 ---
 

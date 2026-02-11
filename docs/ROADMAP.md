@@ -8,7 +8,9 @@
 - **已修复**：公网/移动端同源加载（前端默认使用 `window.location.origin`；不再硬编码 `:8000`）。
 - **已落地**：前端 `API_BASE` 单点真理（`src/lib/apiBase.ts`），避免 WebView/同源/localhost 分叉。
 - **已验收**：iOS/Android Capacitor internal build 已在真机安装运行（本地 Xcode/Android Studio）。
+- **已落地**：Android release APK 发布链路（GitHub Releases + `.sha256`），并记录了 iCloud/互传目录可能导致后台读取失败（`Resource deadlock avoided`）的限制与规避方法。
 - **已落地**：ZH/EN 双语链路（schema + API `lang=zh|en|both` + pipeline + Web UI `中文/EN` 切换），并完成 latest day 英文端到端回归。
+- **已修复**：移动端语言切换竞态（切换后外层 one-liner 残留旧语言）——需要通过重新打包 App 获取修复。
 - **S0 安全收口完成**：
   - `GET /api/status` 变为公共摘要（不含本机路径/日志路径/敏感运维信息）
   - 新增 `GET /api/admin/status`（管理版）
@@ -24,7 +26,9 @@
 - 验收：`curl -I http://papertok.ai/` 应返回 `301/308` → `https://papertok.ai/...`
 
 2) **双语生产回填（让 EN 真正“可用”）**
-- latest day 已完成 EN 端到端（one-liner/explain/caption/images）；下一步选择回填范围：
+- latest day 已完成 EN 端到端（one-liner/explain/caption/images）。
+- 已增加“按天完成验收”监控脚本（8 指标严格达标才汇报），用于减少 spam、让回填进度更可控。
+- 下一步选择回填范围：
   - A) 最近 7/30 天
   - B) 全量历史（成本较高，需限速/排队）
 - 为回填建立标准作业：按 `day`/`lang` 分批 enqueue（避免全库一次性跑崩）
@@ -46,9 +50,10 @@
 - 面板上减少“历史失败把人吓到”的噪声
 
 6) **Internal 分发/打包（让 App 跟上 Web 功能）**
-- 结论：App 壳不会自动更新 Web 前端；每次前端变更都需要重新打包/发布。
+- 结论：App 壳不会自动更新 Web 前端；每次前端变更都需要重新打包/发布（这也是为什么 App 里“语言切换问题”无法靠刷新解决）。
 - iOS：补齐 “Archive → TestFlight” 或 “Development .ipa” 的 runbook
-- Android：完成 release 签名 APK 的 keystore 配置，并出一个带 ZH/EN 切换的新 APK（`versionCode` 递增）
+- Android：release 签名 APK + GitHub Releases 分发
+  - 注意：不要把待上传 APK 放在 iCloud/互传目录（可能触发 `Resource deadlock avoided`）；先拷到本地路径再上传
 
 ---
 

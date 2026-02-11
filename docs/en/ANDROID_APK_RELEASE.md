@@ -70,6 +70,9 @@ Outputs:
 ## 6) Recommended distribution: GitHub Releases
 Create a release and upload assets (APK + sha256).
 
+Use the Releases page as the single source of truth for downloads:
+- https://github.com/ViffyGwaanl/papertok/releases
+
 Example:
 ```bash
 TAG="android-YYYYMMDD-HHMMSS"
@@ -83,6 +86,14 @@ gh release create "$TAG" \
   --prerelease \
   "$APK" "$SHA"
 ```
+
+### Important: iCloud Drive / File Provider directories
+If your APK is under an iCloud Drive / File Provider managed path (e.g. `~/Library/Mobile Documents/...`), some background processes may fail to read the file contents and you may see:
+- `OSError: [Errno 11] Resource deadlock avoided`
+
+This can break `cp/ditto/gh release create` uploads.
+
+Workaround: copy the `*.apk` and `*.sha256` to a local non-iCloud folder first (e.g. `~/Downloads/` or `papertok/exports/android/`), then upload.
 
 ---
 
