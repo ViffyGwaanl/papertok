@@ -23,7 +23,12 @@ class Paper(SQLModel, table=True):
 
     # card fields
     display_title: Optional[str] = None
-    one_liner: Optional[str] = None  # extract
+
+    # One-liner summaries
+    # - legacy field `one_liner` is treated as Chinese (zh)
+    one_liner: Optional[str] = None  # zh (legacy)
+    one_liner_en: Optional[str] = None  # en
+
     golden_line: Optional[str] = None
 
     thumbnail_url: Optional[str] = None
@@ -36,10 +41,12 @@ class Paper(SQLModel, table=True):
     raw_text_path: Optional[str] = None  # mineru/md output path etc.
 
     # LLM-generated longform explanation based on parsed paper content (optional)
-    content_explain_cn: Optional[str] = None
+    content_explain_cn: Optional[str] = None  # zh
+    content_explain_en: Optional[str] = None  # en
 
     # Optional: image -> caption mapping (JSON). Keys are relative URLs from /api/papers/{id} images[].
-    image_captions_json: Optional[str] = None
+    image_captions_json: Optional[str] = None  # zh
+    image_captions_en_json: Optional[str] = None  # en
 
     meta_json: Optional[str] = None
 

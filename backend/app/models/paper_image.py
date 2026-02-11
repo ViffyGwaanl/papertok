@@ -16,6 +16,9 @@ class PaperImage(SQLModel, table=True):
     # e.g. "generated" | "mineru_extracted" (we only use generated for now)
     kind: str = Field(default="generated", index=True)
 
+    # language variant for the generated asset: zh|en
+    lang: str = Field(default="zh", index=True)
+
     provider: str = Field(default="seedream", index=True)
 
     order_idx: int = Field(default=0, index=True)
@@ -41,10 +44,11 @@ class PaperImage(SQLModel, table=True):
 
 
 Index(
-    "idx_paper_images_paper_kind_provider_order",
+    "idx_paper_images_paper_kind_provider_lang_order",
     PaperImage.paper_id,
     PaperImage.kind,
     PaperImage.provider,
+    PaperImage.lang,
     PaperImage.order_idx,
     unique=True,
 )

@@ -39,6 +39,10 @@ def get_random_papers(
             "Default: all (full history)."
         ),
     ),
+    lang: str = Query(
+        default="zh",
+        description="Content language for feed gating + fields: zh|en",
+    ),
 ):
     """Return random PaperCards for the WikiTok-style feed.
 
@@ -67,17 +71,22 @@ def get_random_papers(
         # Hide unprocessed papers by default (skip in feed until "done")
         app_cfg = get_effective_app_config(session)
 
+        # Normalize lang
+        lang0 = (lang or "zh").strip().lower()
+        if lang0 not in {"zh", "en"}:
+            lang0 = "zh"
+
         if app_cfg.feed_require_explain:
-            q = q.where(Paper.content_explain_cn.is_not(None)).where(
-                Paper.raw_text_path.is_not(None)
-            )
+            explain_col = Paper.content_explain_en if lang0 == "en" else Paper.content_explain_cn
+            q = q.where(explain_col.is_not(None)).where(Paper.raw_text_path.is_not(None))
 
         if app_cfg.feed_require_image_captions:
+            cap_col = Paper.image_captions_en_json if lang0 == "en" else Paper.image_captions_json
             q = (
-                q.where(Paper.image_captions_json.is_not(None))
-                .where(Paper.image_captions_json != "")
-                .where(Paper.image_captions_json != "{}")
-                .where(Paper.image_captions_json != "null")
+                q.where(cap_col.is_not(None))
+                .where(cap_col != "")
+                .where(cap_col != "{}")
+                .where(cap_col != "null")
             )
 
         if app_cfg.feed_require_generated_images:
@@ -86,6 +95,7 @@ def get_random_papers(
                 select(PaperImage.id)
                 .where(PaperImage.paper_id == Paper.id)
                 .where(PaperImage.kind == "generated")
+                .where(PaperImage.lang == lang0)
                 .where(PaperImage.enabled == True)  # noqa: E712
                 .where(PaperImage.url_path.is_not(None))
             )
@@ -120,6 +130,7 @@ def get_random_papers(
             select(PaperImage)
             .where(PaperImage.paper_id.in_([p.id for p in rows]))
             .where(PaperImage.kind == "generated")
+            .where(PaperImage.lang == lang0)
             .where(PaperImage.enabled == True)  # noqa: E712
             .where(PaperImage.url_path.is_not(None))
         )
@@ -136,7 +147,7 @@ def get_random_papers(
     # Map to WikiTok card shape
     cards = []
     for p in rows:
-        extract = p.one_liner
+        extract = p.one_liner_en if lang0 == "en" else p.one_liner
 
         # Fallback: show raw abstract/summary until LLM completes.
         if not extract and p.meta_json:
@@ -220,7 +231,10 @@ def get_random_papers(
 
 
 @router.get("/{paper_id}")
-def get_paper_detail(paper_id: int):
+def get_paper_detail(
+    paper_id: int,
+    lang: str = Query(default="zh", description="Content language: zh|en|both"),
+):
     """Return detail for one paper (for in-app modal/detail view)."""
     with Session(engine) as session:
         paper = session.get(Paper, paper_id)
@@ -233,9 +247,14 @@ def get_paper_detail(paper_id: int):
             settings.papers_pdf_dir, paper.pdf_path, mount_prefix="/static/pdfs"
         )
 
+    lang0 = (lang or "zh").strip().lower()
+    if lang0 not in {"zh", "en", "both"}:
+        lang0 = "zh"
+
     raw_markdown_url = None
     images: list[str] = []
     image_captions: dict[str, str] = {}
+    image_captions_en: dict[str, str] = {}
 
     if paper.raw_text_path:
         raw_markdown_url = _safe_rel_url(
@@ -245,13 +264,25 @@ def get_paper_detail(paper_id: int):
         )
 
         # Load cached captions (if any)
-        if paper.image_captions_json:
+        if lang0 in {"zh", "both"} and paper.image_captions_json:
             try:
                 image_captions = json.loads(paper.image_captions_json) or {}
                 if not isinstance(image_captions, dict):
                     image_captions = {}
             except Exception:
                 image_captions = {}
+
+        if lang0 in {"en", "both"} and paper.image_captions_en_json:
+            try:
+                image_captions_en = json.loads(paper.image_captions_en_json) or {}
+                if not isinstance(image_captions_en, dict):
+                    image_captions_en = {}
+            except Exception:
+                image_captions_en = {}
+
+        # Pick captions by requested language
+        if lang0 == "en":
+            image_captions = image_captions_en
 
         try:
             md_path = Path(paper.raw_text_path)
@@ -273,20 +304,23 @@ def get_paper_detail(paper_id: int):
     # generated images (seedream)
     gen_images: list[dict] = []
     with Session(engine) as session:
-        imgs = session.exec(
+        q = (
             select(PaperImage)
             .where(PaperImage.paper_id == paper.id)
             .where(PaperImage.kind == "generated")
             .where(PaperImage.enabled == True)  # noqa: E712
             .where(PaperImage.url_path.is_not(None))
-            .order_by(PaperImage.order_idx.asc())
-        ).all()
+        )
+        if lang0 in {"zh", "en"}:
+            q = q.where(PaperImage.lang == lang0)
+        imgs = session.exec(q.order_by(PaperImage.order_idx.asc())).all()
         for img in imgs:
             gen_images.append(
                 {
                     "url": img.url_path,
                     "order_idx": img.order_idx,
                     "provider": img.provider,
+                    "lang": img.lang,
                 }
             )
 
@@ -299,14 +333,20 @@ def get_paper_detail(paper_id: int):
         "display_title": paper.display_title or paper.title,
         "url": paper.url or (f"https://arxiv.org/abs/{paper.external_id}" if paper.external_id else None),
         "thumbnail_url": paper.thumbnail_url,
-        "one_liner": paper.one_liner,
+        "one_liner": paper.one_liner_en if lang0 == "en" else paper.one_liner,
+        "one_liner_en": (paper.one_liner_en if lang0 == "both" else None),
         "content_explain_cn": paper.content_explain_cn,
+        "content_explain_en": (paper.content_explain_en if lang0 in {"en", "both"} else None),
+        "content_explain": (
+            paper.content_explain_en if lang0 == "en" else paper.content_explain_cn
+        ),
         "pdf_url": paper.pdf_url,
         "pdf_local_url": pdf_local_url,
         # raw_text_path is an internal absolute path on disk; do not expose publicly.
         "raw_markdown_url": raw_markdown_url,
         "images": images,
         "image_captions": image_captions,
+        "image_captions_en": (image_captions_en if lang0 == "both" else None),
         "generated_images": gen_images,
         "created_at": paper.created_at,
         "updated_at": paper.updated_at,
