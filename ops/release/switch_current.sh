@@ -22,15 +22,15 @@ fi
 ln -sfn "$REL_DIR" "$DEPLOY_ROOT/current"
 echo "OK: current -> $REL_DIR"
 
-UID="$(id -u)"
+USER_UID="$(id -u)"
 
 # Restart core services to pick up new code.
 # Note: cloudflared tunnel itself is independent; we only restart app services.
-launchctl kickstart -k "gui/$UID/com.papertok.server" || true
-launchctl kickstart -k "gui/$UID/com.papertok.job_worker" || true
+launchctl kickstart -k "gui/$USER_UID/com.papertok.server" || true
+launchctl kickstart -k "gui/$USER_UID/com.papertok.job_worker" || true
 
 # daily/logrotate are scheduled; watchdog is optional
-launchctl kickstart -k "gui/$UID/com.papertok.cloudflared_watchdog" 2>/dev/null || true
+launchctl kickstart -k "gui/$USER_UID/com.papertok.cloudflared_watchdog" 2>/dev/null || true
 
 # Smoke check
 sleep 2
