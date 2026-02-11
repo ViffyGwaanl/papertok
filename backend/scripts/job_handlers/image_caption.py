@@ -35,10 +35,24 @@ def _parse_external_ids(s: str | None) -> list[str] | None:
     return arr or None
 
 
-def wipe_captions(session: Session, *, day: str | None, external_ids: list[str] | None) -> int:
-    """Clear image_captions_json for scoped papers."""
+def wipe_captions(
+    session: Session,
+    *,
+    day: str | None,
+    external_ids: list[str] | None,
+    langs: list[str],
+) -> int:
+    """Clear cached captions for scoped papers (zh/en)."""
 
-    q = "UPDATE papers SET image_captions_json=NULL WHERE raw_text_path IS NOT NULL"
+    cols = []
+    if "zh" in langs:
+        cols.append("image_captions_json=NULL")
+    if "en" in langs:
+        cols.append("image_captions_en_json=NULL")
+    if not cols:
+        cols = ["image_captions_json=NULL"]
+
+    q = f"UPDATE papers SET {', '.join(cols)} WHERE raw_text_path IS NOT NULL"
     params: dict = {}
     if external_ids:
         # SQLite doesn't support binding list directly in plain text; use IN (...) with named params
@@ -89,6 +103,20 @@ def main():
         except Exception:
             pass
 
+    # Language scope (zh|en|both)
+    lang = str(payload.get("lang") or "both").strip().lower()
+    langs: list[str]
+    if lang in {"zh", "en"}:
+        langs = [lang]
+    else:
+        langs = ["zh", "en"]
+
+    # Apply to runtime settings for this job
+    try:
+        settings.papertok_langs = langs
+    except Exception:
+        pass
+
     with Session(engine) as session:
         day = payload.get("day")
         if isinstance(day, str):
@@ -112,12 +140,14 @@ def main():
         init_db()
 
         if job_type == "image_caption_regen_scoped":
-            n = wipe_captions(session, day=day, external_ids=external_ids)
-            print(f"WIPE_CAPTIONS_OK: cleared={n} day={day} external_ids={len(external_ids) if external_ids else 0}")
+            n = wipe_captions(session, day=day, external_ids=external_ids, langs=langs)
+            print(
+                f"WIPE_CAPTIONS_OK: cleared={n} day={day} external_ids={len(external_ids) if external_ids else 0} langs={langs}"
+            )
 
         print(
             f"CAPTION_JOB_START: type={job_type} day={day} external_ids={len(external_ids) if external_ids else 0} "
-            f"max={settings.image_caption_max} per_paper={settings.image_caption_per_paper}"
+            f"langs={langs} max={settings.image_caption_max} per_paper={settings.image_caption_per_paper}"
         )
 
         run_image_caption_for_pending(session, day=day, external_ids=external_ids)

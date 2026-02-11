@@ -168,6 +168,12 @@ class Settings(BaseModel):
         "true",
         "yes",
     }
+
+    # If enabled, only generate the provider currently selected for display in app config.
+    # This saves cost/time (generate only one provider instead of seedream+glm).
+    paper_images_generate_only_display: bool = os.getenv(
+        "PAPER_IMAGES_GENERATE_ONLY_DISPLAY", ""
+    ).lower() in {"1", "true", "yes"}
     paper_images_per_paper: int = int(os.getenv("PAPER_IMAGES_PER_PAPER", "3"))
     paper_images_max_papers: int = int(os.getenv("PAPER_IMAGES_MAX_PAPERS", "1"))
 

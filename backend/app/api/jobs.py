@@ -31,11 +31,21 @@ def get_session():
 
 
 SUPPORTED_JOB_TYPES = {
+    # one-liner
+    "one_liner_scoped": "Generate one-liners for a scoped set (fill missing)",
+    "one_liner_regen_scoped": "Re-generate one-liners for a scoped set (wipe then run)",
+
+    # explanation
+    "content_analysis_scoped": "Generate explanations (zh/en) for a scoped set (fill missing)",
+    "content_analysis_regen_scoped": "Re-generate explanations (zh/en) for a scoped set (wipe then run)",
+
     # captions
-    "image_caption_scoped": "Generate captions for a scoped set (no wipe; fill missing)",
-    "image_caption_regen_scoped": "Re-generate captions for a scoped set (wipe then run)",
+    "image_caption_scoped": "Generate captions (zh/en) for a scoped set (fill missing)",
+    "image_caption_regen_scoped": "Re-generate captions (zh/en) for a scoped set (wipe then run)",
 
     # images
+    "paper_images_scoped": "Generate paper images (zh/en) for a scoped set (fill missing)",
+    "paper_images_regen_scoped": "Re-generate paper images (zh/en) for a scoped set (wipe then run)",
     "paper_images_glm_backfill": "Backfill GLM generated images for all papers",
 
     # paper_events

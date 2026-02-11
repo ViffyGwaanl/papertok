@@ -22,6 +22,30 @@ LOCK_PATH = DATA_DIR / ".job_worker.lock"
 
 
 SUPPORTED: dict[str, list[str]] = {
+    # one-liner
+    "one_liner_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.one_liner",
+    ],
+    "one_liner_regen_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.one_liner",
+    ],
+
+    # explanation
+    "content_analysis_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.content_analysis",
+    ],
+    "content_analysis_regen_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.content_analysis",
+    ],
+
     # captions
     "image_caption_scoped": [
         str(BACKEND_DIR / ".venv" / "bin" / "python"),
@@ -35,6 +59,16 @@ SUPPORTED: dict[str, list[str]] = {
     ],
 
     # images
+    "paper_images_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.paper_images",
+    ],
+    "paper_images_regen_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.paper_images",
+    ],
     "paper_images_glm_backfill": [
         "/bin/bash",
         str(PAPERTOK_ROOT / "ops" / "run_paper_images_glm_backfill.sh"),
@@ -153,7 +187,17 @@ def _execute_job(job_id: int, job_type: str, log_path: Path) -> None:
     payload_path.mkdir(parents=True, exist_ok=True)
     payload_file = payload_path / f"job_{job_id}.payload.json"
 
-    if job_type in {"image_caption_scoped", "image_caption_regen_scoped", "paper_retry_stage"}:
+    if job_type in {
+        "one_liner_scoped",
+        "one_liner_regen_scoped",
+        "content_analysis_scoped",
+        "content_analysis_regen_scoped",
+        "image_caption_scoped",
+        "image_caption_regen_scoped",
+        "paper_images_scoped",
+        "paper_images_regen_scoped",
+        "paper_retry_stage",
+    }:
         with Session(engine) as session:
             j = session.get(Job, job_id)
             payload = j.payload_json if j else None
