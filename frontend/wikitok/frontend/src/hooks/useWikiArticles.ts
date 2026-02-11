@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { WikiArticle } from "../components/WikiCard";
 
 import { API_BASE, apiUrl } from "../lib/apiBase";
@@ -22,14 +22,23 @@ export function useWikiArticles(opts?: { lang?: string }) {
   const [buffer, setBuffer] = useState<WikiArticle[]>([]);
   const [offlineMode, setOfflineMode] = useState(false);
 
+  // Generation id to ignore stale in-flight fetches after language switch.
+  const genRef = useRef(0);
+
   // When language changes, reset feed so we don't mix languages.
   useEffect(() => {
+    genRef.current += 1;
     setArticles([]);
     setBuffer([]);
     setOfflineMode(false);
+    // If a previous fetch was in-flight, don't let it block the next language fetch.
+    setLoading(false);
   }, [lang0]);
 
   const fetchArticles = async (forBuffer = false) => {
+    // capture the current generation (language version)
+    const myGen = genRef.current;
+
     if (loading) return;
     setLoading(true);
 
@@ -56,6 +65,10 @@ export function useWikiArticles(opts?: { lang?: string }) {
           fetchTimeoutMs: 12000,
         }
       );
+
+      // If language changed while this request was in-flight, ignore the result.
+      if (genRef.current !== myGen) return;
+
       setOfflineMode(fromCache);
 
       // MVP: allow missing thumbnails (UI will fall back to gray background)
@@ -83,10 +96,13 @@ export function useWikiArticles(opts?: { lang?: string }) {
         fetchArticles(true);
       }
     } catch (error) {
+      // If language switched, ignore errors from stale requests.
+      if (genRef.current !== myGen) return;
       console.error("Error fetching articles:", error);
       // keep offlineMode as-is
     } finally {
-      setLoading(false);
+      // Only clear loading if we're still on the same language generation.
+      if (genRef.current === myGen) setLoading(false);
     }
   };
 
