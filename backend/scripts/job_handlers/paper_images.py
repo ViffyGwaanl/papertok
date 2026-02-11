@@ -189,16 +189,78 @@ def main():
         else:
             external_ids = None
 
-        # Provider: only wipe/generate for display provider (per user preference)
+            # Provider selection
+        # Default behavior (safe/cost-saving): generate ONLY the current display provider.
+        # Overrides (payload):
+        # - paper_images_generate_only_display: 0/1
+        # - paper_images_providers / providers: ["seedream","glm"]
+        # - provider: "seedream"|"glm"|"display"|"all"
         app_cfg = get_effective_app_config(session)
         display = (app_cfg.paper_images_display_provider or "seedream").strip().lower()
-        provider = display if display in {"seedream", "glm"} else None
 
-        # Force generation mode: only display provider
-        try:
-            settings.paper_images_generate_only_display = True
-        except Exception:
-            pass
+        # 1) read payload overrides
+        gen_only = payload.get("paper_images_generate_only_display")
+        if isinstance(gen_only, str):
+            gen_only = gen_only.strip().lower() in {"1", "true", "yes"}
+        elif isinstance(gen_only, (int, float)):
+            gen_only = bool(int(gen_only))
+        elif isinstance(gen_only, bool):
+            gen_only = gen_only
+        else:
+            gen_only = None
+
+        provs0 = payload.get("paper_images_providers")
+        if provs0 is None:
+            provs0 = payload.get("providers")
+
+        providers: list[str] = []
+        if isinstance(provs0, list):
+            providers = [str(x).strip().lower() for x in provs0 if str(x).strip()]
+        elif isinstance(provs0, str):
+            providers = [x.strip().lower() for x in provs0.split(",") if x.strip()]
+
+        prov1 = str(payload.get("provider") or "").strip().lower()
+        if prov1:
+            if prov1 in {"seedream", "glm"}:
+                providers = [prov1]
+            elif prov1 in {"all", "both"}:
+                providers = ["seedream", "glm"]
+            elif prov1 == "display":
+                providers = [display] if display in {"seedream", "glm"} else []
+                if gen_only is None:
+                    gen_only = True
+
+        # 2) apply to runtime settings for this job
+        if gen_only is not None:
+            try:
+                settings.paper_images_generate_only_display = bool(gen_only)
+            except Exception:
+                pass
+
+        if providers:
+            try:
+                settings.paper_images_providers = providers
+            except Exception:
+                pass
+            # If providers are explicitly set, default to generating those providers (not display-only)
+            if gen_only is None:
+                try:
+                    settings.paper_images_generate_only_display = False
+                except Exception:
+                    pass
+
+        # Provider passed to wipe function (regen only).
+        # - if display-only: restrict wipe to display provider
+        # - else if providers explicitly set: wipe only when a single provider is selected
+        provider: str | None = None
+        if getattr(settings, "paper_images_generate_only_display", False):
+            if display in {"seedream", "glm"}:
+                provider = display
+        else:
+            # only safe to wipe precisely when exactly one provider is requested
+            provs_eff = [x for x in (providers or []) if x in {"seedream", "glm"}]
+            if len(provs_eff) == 1:
+                provider = provs_eff[0]
 
         if job_type == "paper_images_regen_scoped":
             n = wipe_paper_images(session, day=day, external_ids=external_ids, langs=langs, provider=provider)
@@ -208,7 +270,9 @@ def main():
 
         print(
             f"PAPER_IMAGES_JOB_START: type={job_type} day={day} external_ids={len(external_ids) if external_ids else 0} "
-            f"langs={langs} per_paper={settings.paper_images_per_paper} max_papers={settings.paper_images_max_papers} provider={provider}"
+            f"langs={langs} per_paper={settings.paper_images_per_paper} max_papers={settings.paper_images_max_papers} "
+            f"generate_only_display={getattr(settings, 'paper_images_generate_only_display', False)} "
+            f"providers={getattr(settings, 'paper_images_providers', None)} wipe_provider={provider}"
         )
 
         settings.run_paper_images = True

@@ -82,6 +82,24 @@ cd papertok
 bash ops/run_daily.sh
 ```
 
+### 2.5 回填（Backfill）：补抓某一天的 HF Top10（可选）
+> 适用：你想把“最近 N 天”的历史补齐（例如双语回填），但 DB 里还没有那些 day。
+
+用环境变量 `HF_DATE=YYYY-MM-DD` 指定要抓取的日期：
+```bash
+cd papertok
+HF_DATE=2026-02-03 bash ops/run_daily.sh
+```
+
+如果你只想补抓 + 下载 PDF + 跑 MinerU（把底座数据准备好），而把 explain/caption/images 交给 Jobs：
+```bash
+cd papertok
+HF_DATE=2026-02-03 \
+  RUN_CONTENT_ANALYSIS=0 RUN_IMAGE_CAPTION=0 RUN_PAPER_IMAGES=0 \
+  SKIP_LLM=1 \
+  bash ops/run_daily.sh
+```
+
 ---
 
 ## 3) 架构与关键设计决策

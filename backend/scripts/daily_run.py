@@ -1559,7 +1559,8 @@ def upsert_paper(session: Session, item: dict[str, Any], *, day: str | None) -> 
 def main():
     init_db()
 
-    date = datetime.now().strftime("%Y-%m-%d")
+    # Optional override for backfills: HF_DATE=YYYY-MM-DD
+    date = (os.getenv("HF_DATE") or "").strip() or datetime.now().strftime("%Y-%m-%d")
 
     effective_date = date
 
