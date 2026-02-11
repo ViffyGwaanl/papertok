@@ -45,20 +45,31 @@ def _ensure_sqlite_columns() -> None:
 
 
 def _ensure_sqlite_indexes() -> None:
-    """Small SQLite helper for index evolution."""
+    """Small SQLite helper for index evolution.
+
+    NOTE: This helper must not fight Alembic migrations.
+    We keep it as a safety net for local MVP DBs, but align it with the latest schema.
+    """
 
     if engine.url.get_backend_name() != "sqlite":
         return
 
     with engine.connect() as conn:
-        # paper_images unique index used to omit provider; drop old one and create the new one.
+        # Drop legacy/obsolete indexes (pre-bilingual)
         conn.execute(text("DROP INDEX IF EXISTS idx_paper_images_paper_kind_order"))
+        conn.execute(text("DROP INDEX IF EXISTS idx_paper_images_paper_kind_provider_order"))
+
+        # Ensure the lang-aware unique index exists
         conn.execute(
             text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS idx_paper_images_paper_kind_provider_order "
-                "ON paper_images (paper_id, kind, provider, order_idx)"
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_paper_images_paper_kind_provider_lang_order "
+                "ON paper_images (paper_id, kind, provider, lang, order_idx)"
             )
         )
+
+        # Helpful non-unique index
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_paper_images_lang ON paper_images (lang)"))
+
         conn.commit()
 
 
