@@ -169,6 +169,11 @@ def main():
             settings.paper_images_max_papers = int(payload["paper_images_max_papers"])
         except Exception:
             pass
+    if "paper_images_concurrency" in payload:
+        try:
+            settings.paper_images_concurrency = int(payload["paper_images_concurrency"])
+        except Exception:
+            pass
 
     init_db()
 

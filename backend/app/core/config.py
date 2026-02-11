@@ -67,6 +67,8 @@ class Settings(BaseModel):
     }
     content_analysis_max: int = int(os.getenv("CONTENT_ANALYSIS_MAX", "2"))
     content_analysis_input_chars: int = int(os.getenv("CONTENT_ANALYSIS_INPUT_CHARS", "80000"))
+    # concurrency for explanation generation (threads)
+    content_analysis_concurrency: int = int(os.getenv("CONTENT_ANALYSIS_CONCURRENCY", "1"))
     # Model used for long-form explanation
     llm_model_analysis: str = os.getenv("LLM_MODEL_ANALYSIS", llm_model_text)
 
@@ -180,6 +182,8 @@ class Settings(BaseModel):
     ).lower() in {"1", "true", "yes"}
     paper_images_per_paper: int = int(os.getenv("PAPER_IMAGES_PER_PAPER", "3"))
     paper_images_max_papers: int = int(os.getenv("PAPER_IMAGES_MAX_PAPERS", "1"))
+    # concurrency for paper image generation (threads across papers)
+    paper_images_concurrency: int = int(os.getenv("PAPER_IMAGES_CONCURRENCY", "1"))
 
     # Which providers to GENERATE for (comma-separated), e.g. "seedream,glm".
     paper_images_providers: list[str] = (

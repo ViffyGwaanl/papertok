@@ -98,6 +98,12 @@ def main():
         except Exception:
             pass
 
+    if "content_analysis_concurrency" in payload:
+        try:
+            settings.content_analysis_concurrency = int(payload["content_analysis_concurrency"])
+        except Exception:
+            pass
+
     init_db()
 
     with Session(engine) as session:

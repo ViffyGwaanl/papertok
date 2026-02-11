@@ -551,34 +551,84 @@ def run_content_analysis_for_pending(
             print(f"CONTENT_ANALYSIS[{lang0}]: nothing to do")
             continue
 
+        # Concurrency: run LLM calls in parallel, then write results back in the main thread.
+        conc = int(getattr(settings, "content_analysis_concurrency", 1) or 1)
+        conc = max(1, min(conc, 16))
+
+        items: list[tuple[int, str, str, str]] = []  # (paper_id, external_id, title, raw_text_path)
+        by_id: dict[int, Paper] = {}
         for p in rows:
-            try:
-                record_paper_event(session, paper_id=p.id, stage=stage, status="started")
-                path = Path(p.raw_text_path or "")
-                if not path.exists():
-                    msg = f"raw_text_path missing on disk: {p.raw_text_path}"
-                    record_paper_event(session, paper_id=p.id, stage=stage, status="failed", error=msg)
-                    print(f"WARN: {msg}")
-                    continue
+            by_id[int(p.id)] = p
+            record_paper_event(session, paper_id=p.id, stage=stage, status="started")
+            items.append((int(p.id), str(p.external_id or ""), str(p.title or ""), str(p.raw_text_path or "")))
 
-                text = path.read_text(encoding="utf-8", errors="ignore")
-                text = text[: int(settings.content_analysis_input_chars)]
+        def _task(it: tuple[int, str, str, str]) -> tuple[int, str | None, str | None]:
+            pid, eid, title, raw_path = it
+            path = Path(raw_path or "")
+            if not raw_path or not path.exists():
+                return pid, None, f"raw_text_path missing on disk: {raw_path}"
 
-                print(f"CONTENT_ANALYSIS[{lang0}]: {p.external_id} -> generating...")
-                out = build_content_explain(title=p.title, markdown_text=text, lang=lang0)
-                if lang0 == "en":
-                    p.content_explain_en = out
-                else:
-                    p.content_explain_cn = out
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            text = text[: int(settings.content_analysis_input_chars)]
+            out = build_content_explain(title=title, markdown_text=text, lang=lang0)
+            return pid, (out or "").strip(), None
 
-                p.updated_at = datetime.utcnow()
-                session.add(p)
-                session.commit()
-                record_paper_event(session, paper_id=p.id, stage=stage, status="success")
-                print(f"CONTENT_ANALYSIS_OK[{lang0}]: {p.external_id}")
-            except Exception as e:
-                record_paper_event(session, paper_id=p.id, stage=stage, status="failed", error=str(e))
-                print(f"WARN: content analysis failed[{lang0}] for {p.external_id}: {e}")
+        if conc <= 1 or len(items) <= 1:
+            for it in items:
+                pid, eid, _, _ = it
+                try:
+                    print(f"CONTENT_ANALYSIS[{lang0}]: {eid} -> generating...")
+                    pid2, out, err = _task(it)
+                    if err:
+                        record_paper_event(session, paper_id=pid2, stage=stage, status="failed", error=err)
+                        print(f"WARN: {err}")
+                        continue
+
+                    p = by_id.get(pid2)
+                    if not p:
+                        continue
+                    if lang0 == "en":
+                        p.content_explain_en = out
+                    else:
+                        p.content_explain_cn = out
+
+                    p.updated_at = datetime.utcnow()
+                    session.add(p)
+                    session.commit()
+                    record_paper_event(session, paper_id=pid2, stage=stage, status="success")
+                    print(f"CONTENT_ANALYSIS_OK[{lang0}]: {eid}")
+                except Exception as e:
+                    record_paper_event(session, paper_id=pid, stage=stage, status="failed", error=str(e))
+                    print(f"WARN: content analysis failed[{lang0}] for {eid}: {e}")
+        else:
+            print(f"CONTENT_ANALYSIS[{lang0}]: concurrency={conc} papers={len(items)}")
+            with ThreadPoolExecutor(max_workers=conc) as ex:
+                fut_map = {ex.submit(_task, it): it for it in items}
+                for fut in as_completed(fut_map):
+                    pid, eid, _, _ = fut_map[fut]
+                    try:
+                        pid2, out, err = fut.result()
+                        if err:
+                            record_paper_event(session, paper_id=pid2, stage=stage, status="failed", error=err)
+                            print(f"WARN: {err}")
+                            continue
+
+                        p = by_id.get(pid2)
+                        if not p:
+                            continue
+                        if lang0 == "en":
+                            p.content_explain_en = out
+                        else:
+                            p.content_explain_cn = out
+
+                        p.updated_at = datetime.utcnow()
+                        session.add(p)
+                        session.commit()
+                        record_paper_event(session, paper_id=pid2, stage=stage, status="success")
+                        print(f"CONTENT_ANALYSIS_OK[{lang0}]: {eid}")
+                    except Exception as e:
+                        record_paper_event(session, paper_id=pid, stage=stage, status="failed", error=str(e))
+                        print(f"WARN: content analysis failed[{lang0}] for {eid}: {e}")
 
 
 
@@ -1292,8 +1342,8 @@ def run_paper_images_for_pending(
             print(f"PAPER_IMAGES[{lang0}]: nothing to do")
             continue
 
-        for p in picked:
-            record_paper_event(session, paper_id=p.id, stage=stage, status="started")
+        def _process_one(sess: Session, p: Paper) -> None:
+            record_paper_event(sess, paper_id=p.id, stage=stage, status="started")
 
             one_liner_txt = (p.one_liner_en or "").strip() if lang0 == "en" else (p.one_liner or "").strip()
             if not one_liner_txt:
@@ -1328,7 +1378,7 @@ def run_paper_images_for_pending(
                 w, h = _parse_size(size)
 
                 # Existing rows for this provider + lang
-                existing = session.exec(
+                existing = sess.exec(
                     select(PaperImage)
                     .where(PaperImage.paper_id == p.id)
                     .where(PaperImage.kind == "generated")
@@ -1352,8 +1402,8 @@ def run_paper_images_for_pending(
                         ex_img.prompt = None
                         ex_img.negative_prompt = None
                         ex_img.updated_at = datetime.utcnow()
-                        session.add(ex_img)
-                session.commit()
+                        sess.add(ex_img)
+                sess.commit()
 
                 # Ensure plan rows exist
                 for idx in range(target_n):
@@ -1374,11 +1424,11 @@ def run_paper_images_for_pending(
                         height=h,
                         meta_json=json.dumps({"title": item.get("title")}, ensure_ascii=False),
                     )
-                    session.add(img)
-                session.commit()
+                    sess.add(img)
+                sess.commit()
 
                 # Generate missing images
-                todo = session.exec(
+                todo = sess.exec(
                     select(PaperImage)
                     .where(PaperImage.paper_id == p.id)
                     .where(PaperImage.kind == "generated")
@@ -1468,15 +1518,15 @@ def run_paper_images_for_pending(
                         meta["remote_url"] = remote_url
                         img.meta_json = json.dumps(meta, ensure_ascii=False)
 
-                        session.add(img)
-                        session.commit()
+                        sess.add(img)
+                        sess.commit()
                         print(f"PAPER_IMAGES_OK[{lang0}][{prov}]: {p.external_id} -> {img.url_path}")
                     except Exception as e:
                         img.status = "failed"
                         img.error = str(e)[:500]
                         img.updated_at = datetime.utcnow()
-                        session.add(img)
-                        session.commit()
+                        sess.add(img)
+                        sess.commit()
                         print(
                             f"WARN: PAPER_IMAGES failed[{lang0}][{prov}] for {p.external_id} idx={img.order_idx}: {e}"
                         )
@@ -1486,7 +1536,7 @@ def run_paper_images_for_pending(
                 summary = {}
                 any_failed = False
                 for prov in enabled:
-                    rows2 = session.exec(
+                    rows2 = sess.exec(
                         select(PaperImage)
                         .where(PaperImage.paper_id == p.id)
                         .where(PaperImage.kind == "generated")
@@ -1500,7 +1550,7 @@ def run_paper_images_for_pending(
                     if fail > 0 or gen < target_n:
                         any_failed = True
                 record_paper_event(
-                    session,
+                    sess,
                     paper_id=p.id,
                     stage=stage,
                     status="failed" if any_failed else "success",
@@ -1509,6 +1559,28 @@ def run_paper_images_for_pending(
                 )
             except Exception:
                 pass
+        conc = int(getattr(settings, "paper_images_concurrency", 1) or 1)
+        conc = max(1, min(conc, 16))
+        if conc <= 1 or len(picked) <= 1:
+            for p in picked:
+                _process_one(session, p)
+        else:
+            print(f"PAPER_IMAGES[{lang0}]: concurrency={conc} papers={len(picked)} providers={enabled}")
+            ids = [int(p.id) for p in picked]
+            def _worker(pid: int) -> None:
+                with Session(engine) as sess2:
+                    p2 = sess2.get(Paper, pid)
+                    if not p2:
+                        return
+                    _process_one(sess2, p2)
+            with ThreadPoolExecutor(max_workers=conc) as ex:
+                futs = [ex.submit(_worker, pid) for pid in ids]
+                for fut in as_completed(futs):
+                    try:
+                        fut.result()
+                    except Exception as e:
+                        print(f"WARN: PAPER_IMAGES worker failed: {e}")
+
 
 
 
