@@ -151,9 +151,13 @@ class Settings(BaseModel):
         "yes",
     }
     image_caption_model: str = os.getenv("IMAGE_CAPTION_MODEL", "glm-4.6v")
+
     # Caption ALL extracted images by default (can be limited via env)
     image_caption_max: int = int(os.getenv("IMAGE_CAPTION_MAX", "100000"))
     image_caption_per_paper: int = int(os.getenv("IMAGE_CAPTION_PER_PAPER", "100000"))
+
+    # Parallelism inside the caption job (threads). Keep modest to avoid overloading the VLM endpoint.
+    image_caption_concurrency: int = int(os.getenv("IMAGE_CAPTION_CONCURRENCY", "1"))
     # For each image, take context around the markdown reference (chars)
     image_caption_context_chars: int = int(os.getenv("IMAGE_CAPTION_CONTEXT_CHARS", "2000"))
     # How to pick context when an image is referenced multiple times

@@ -107,6 +107,12 @@ def main():
         except Exception:
             pass
 
+    if "image_caption_concurrency" in payload:
+        try:
+            settings.image_caption_concurrency = int(payload["image_caption_concurrency"])
+        except Exception:
+            pass
+
     # Language scope (zh|en|both)
     lang = str(payload.get("lang") or "both").strip().lower()
     langs: list[str]

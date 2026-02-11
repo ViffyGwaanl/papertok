@@ -17,6 +17,7 @@ import base64
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import httpx
 from sqlmodel import Session, select
@@ -778,6 +779,8 @@ def run_image_caption_for_pending(
 ) -> None:
     """Optionally caption MinerU extracted images with a VLM and cache to DB (zh/en).
 
+    Supports limited concurrency inside a single job via IMAGE_CAPTION_CONCURRENCY / settings.image_caption_concurrency.
+
     Controlled by:
     - RUN_IMAGE_CAPTION=1
     - PAPERTOK_LANGS=zh,en
@@ -868,49 +871,79 @@ def run_image_caption_for_pending(
             started_event = False
             failed_event = False
 
+            # Build a todo list (missing captions only)
+            todo: list[tuple[Path, str]] = []  # (file_path, rel_url)
             for fp in files:
-                if done >= max_total or paper_added >= per_paper:
-                    break
-
                 url = _image_rel_url(fp)
                 if not url:
                     continue
                 if captions.get(url):
                     continue
-
-                try:
-                    if not started_event:
-                        record_paper_event(
-                            session,
-                            paper_id=p.id,
-                            stage=stage,
-                            status="started",
-                            meta={"images_total": len(files)},
+                todo.append((fp, url))
+            
+            if not todo:
+                continue
+            
+            max_workers = max(1, int(getattr(settings, "image_caption_concurrency", 1) or 1))
+            
+            # Schedule at most remaining quotas for this paper
+            remaining_total = max(0, max_total - done)
+            remaining_paper = max(0, per_paper - paper_added)
+            to_run = todo[: max(0, min(remaining_total, remaining_paper, len(todo)))]
+            
+            if not to_run:
+                continue
+            
+            futs = {}
+            with ThreadPoolExecutor(max_workers=max_workers) as ex:
+                for fp, url in to_run:
+                    try:
+                        if not started_event:
+                            record_paper_event(
+                                session,
+                                paper_id=p.id,
+                                stage=stage,
+                                status="started",
+                                meta={"images_total": len(files), "concurrency": max_workers},
+                            )
+                            started_event = True
+            
+                        ctx = _extract_image_context_from_markdown(
+                            md_text,
+                            filename=fp.name,
+                            window_chars=ctx_chars,
+                            strategy=ctx_strategy,
+                            max_occurrences=ctx_occ,
                         )
-                        started_event = True
-
-                    print(f"IMAGE_CAPTION[{lang0}]: {p.external_id} {fp.name} -> generating...")
-                    ctx = _extract_image_context_from_markdown(
-                        md_text,
-                        filename=fp.name,
-                        window_chars=ctx_chars,
-                        strategy=ctx_strategy,
-                        max_occurrences=ctx_occ,
-                    )
-
-                    cap = openai_vision_caption(
-                        title=p.title,
-                        image_path=fp,
-                        model=settings.image_caption_model,
-                        context_text=ctx,
-                        lang=lang0,
-                    )
-                    cap = (cap or "").strip()
-                    if cap:
+                        print(f"IMAGE_CAPTION[{lang0}]: {p.external_id} {fp.name} -> generating...")
+                        fut = ex.submit(
+                            openai_vision_caption,
+                            title=p.title,
+                            image_path=fp,
+                            model=settings.image_caption_model,
+                            context_text=ctx,
+                            lang=lang0,
+                        )
+                        futs[fut] = (url, fp.name)
+                    except Exception as e:
+                        if not failed_event:
+                            record_paper_event(session, paper_id=p.id, stage=stage, status="failed", error=str(e))
+                            failed_event = True
+                        print(f"WARN: image caption schedule failed[{lang0}] for {p.external_id} {fp.name}: {e}")
+            
+                for fut in as_completed(list(futs.keys())):
+                    url, fname = futs.get(fut, (None, None))
+                    if not url:
+                        continue
+                    try:
+                        cap = fut.result()
+                        cap = (cap or "").strip()
+                        if not cap:
+                            continue
                         captions[url] = cap
                         paper_added += 1
                         done += 1
-
+            
                         # Persist incrementally so UI can see progress while the job is still running.
                         if lang0 == "en":
                             p.image_captions_en_json = json.dumps(captions, ensure_ascii=False)
@@ -922,18 +955,15 @@ def run_image_caption_for_pending(
                         print(
                             f"IMAGE_CAPTION_SAVE[{lang0}]: {p.external_id} saved {paper_added} / {len(files)} (total={done}/{max_total})"
                         )
-                except Exception as e:
-                    if not failed_event:
-                        record_paper_event(
-                            session,
-                            paper_id=p.id,
-                            stage=stage,
-                            status="failed",
-                            error=str(e),
-                        )
-                        failed_event = True
-                    print(f"WARN: image caption failed[{lang0}] for {p.external_id} {fp.name}: {e}")
-
+            
+                        if done >= max_total or paper_added >= per_paper:
+                            # Do not schedule more; remaining futures will still finish but we stop counting.
+                            pass
+                    except Exception as e:
+                        if not failed_event:
+                            record_paper_event(session, paper_id=p.id, stage=stage, status="failed", error=str(e))
+                            failed_event = True
+                        print(f"WARN: image caption failed[{lang0}] for {p.external_id} {fname}: {e}")
             if paper_added > 0:
                 record_paper_event(
                     session,
