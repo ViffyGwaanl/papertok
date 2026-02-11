@@ -20,9 +20,13 @@ from typing import Any
 
 import httpx
 from sqlmodel import Session, select
+from sqlalchemy import or_
 
 from app.core.config import settings
-from app.core.prompts import CONTENT_ANALYSIS_SYSTEM_PROMPT_ZH
+from app.core.prompts import (
+    CONTENT_ANALYSIS_SYSTEM_PROMPT_ZH,
+    CONTENT_ANALYSIS_SYSTEM_PROMPT_EN,
+)
 from app.db.init_db import init_db
 from app.db.engine import engine
 from app.models.paper import Paper
@@ -272,16 +276,32 @@ def _extract_abstract_from_mineru_markdown(md_text: str) -> str | None:
     return text or None
 
 
-def build_one_liner(title: str, abstract: str | None) -> str:
+def build_one_liner(title: str, abstract: str | None, *, lang: str = "zh") -> str:
     abstract = (abstract or "").strip()
-    prompt = (
-        "请用中文输出：一句话总结这篇论文，要求：\n"
-        "- 只输出一句话，不要编号，不要前缀\n"
-        "- 20~35个汉字左右，信息密度高\n"
-        "- 尽量包含：问题/方法/贡献中的至少两项\n\n"
-        f"标题：{title}\n"
-        f"摘要：{abstract}\n"
-    )
+    lang0 = (lang or "zh").strip().lower()
+    if lang0 not in {"zh", "en"}:
+        lang0 = "zh"
+
+    if lang0 == "en":
+        prompt = (
+            "Write exactly ONE sentence in English summarizing this paper.\n"
+            "Requirements:\n"
+            "- Output only one sentence, no prefix, no numbering\n"
+            "- ~15-25 words, high information density\n"
+            "- Try to include at least two of: problem, method, contribution\n\n"
+            f"Title: {title}\n"
+            f"Abstract: {abstract}\n"
+        )
+    else:
+        prompt = (
+            "请【必须用中文】输出：一句话总结这篇论文，要求：\n"
+            "- 只输出一句话，不要编号，不要前缀\n"
+            "- 20~35个汉字左右，信息密度高\n"
+            "- 尽量包含：问题/方法/贡献中的至少两项\n\n"
+            f"标题：{title}\n"
+            f"摘要：{abstract}\n"
+        )
+
     return openai_chat(prompt, settings.llm_model_text)
 
 
@@ -424,31 +444,62 @@ def run_mineru_for_pending(
 
 
 
-def build_content_explain_cn(*, title: str, markdown_text: str) -> str:
-    """Generate Chinese teaching-style explanation for a paper markdown."""
+def build_content_explain(*, title: str, markdown_text: str, lang: str = "zh") -> str:
+    """Generate teaching-style explanation for a paper markdown (zh/en)."""
 
-    prompt = (
-        "下面是用 MinerU 从论文 PDF 解析出来的 Markdown 文本。\n"
-        "请严格遵循系统提示词的要求来分析和讲解。\n"
-        "注意：不要编造数字或实验结论；涉及数字时必须来自原文或明确写出‘原文未给出/需查证’。\n"
-        "输出尽量控制在 800~1500 个中文字符以内。\n\n"
-        f"论文标题：{title}\n\n"
-        "正文（可能被截断）：\n"
-        f"{markdown_text}\n"
-    )
+    lang0 = (lang or "zh").strip().lower()
+    if lang0 not in {"zh", "en"}:
+        lang0 = "zh"
+
+    if lang0 == "en":
+        prompt = (
+            "Below is Markdown extracted from a research paper PDF (via MinerU).\n"
+            "Follow the system instructions strictly.\n"
+            "Important: do NOT fabricate numbers or results; if unknown, say so.\n\n"
+            f"Title: {title}\n\n"
+            "Body (may be truncated):\n"
+            f"{markdown_text}\n"
+        )
+        system_prompt = CONTENT_ANALYSIS_SYSTEM_PROMPT_EN
+    else:
+        prompt = (
+            "下面是用 MinerU 从论文 PDF 解析出来的 Markdown 文本。\n"
+            "请严格遵循系统提示词的要求来分析和讲解。\n"
+            "注意：不要编造数字或实验结论；涉及数字时必须来自原文或明确写出‘原文未给出/需查证’。\n"
+            "并且【必须输出中文】。\n"
+            "输出尽量控制在 800~1500 个中文字符以内。\n\n"
+            f"论文标题：{title}\n\n"
+            "正文（可能被截断）：\n"
+            f"{markdown_text}\n"
+        )
+        system_prompt = CONTENT_ANALYSIS_SYSTEM_PROMPT_ZH
 
     return openai_chat(
         prompt,
         settings.llm_model_analysis,
-        system_prompt=CONTENT_ANALYSIS_SYSTEM_PROMPT_ZH,
+        system_prompt=system_prompt,
     )
+
+
+def build_content_explain_cn(*, title: str, markdown_text: str) -> str:
+    """Backward compatible wrapper (zh)."""
+
+    return build_content_explain(title=title, markdown_text=markdown_text, lang="zh")
 
 
 
 def run_content_analysis_for_pending(
     session: Session, *, day: str | None = None, external_ids: list[str] | None = None
 ) -> None:
-    """Optionally analyze parsed markdown into Chinese explanation (LLM)."""
+    """Optionally analyze parsed markdown into teaching-style explanation (LLM).
+
+    Controlled by:
+    - RUN_CONTENT_ANALYSIS=1
+    - CONTENT_ANALYSIS_MAX
+    - PAPERTOK_LANGS=zh,en
+
+    Feed gating is language-aware in /api/papers/random.
+    """
 
     if not settings.run_content_analysis:
         return
@@ -462,45 +513,53 @@ def run_content_analysis_for_pending(
         print("WARN: RUN_CONTENT_ANALYSIS=1 but OPENAI_API_KEY is empty -> skipping")
         return
 
-    q = (
-        select(Paper)
-        .where(Paper.raw_text_path.is_not(None))
-        .where(Paper.content_explain_cn.is_(None))
-    )
-    if external_ids:
-        q = q.where(Paper.external_id.in_(external_ids))
-    elif day:
-        q = q.where(Paper.day == day)
+    langs = [x.strip().lower() for x in (settings.papertok_langs or ["zh"]) if x.strip()]
+    langs = [x for x in langs if x in {"zh", "en"}] or ["zh"]
 
-    rows = session.exec(q.order_by(Paper.id.asc()).limit(max_n)).all()
+    for lang0 in langs:
+        stage = "explain_en" if lang0 == "en" else "explain"
+        explain_col = Paper.content_explain_en if lang0 == "en" else Paper.content_explain_cn
 
-    if not rows:
-        print("CONTENT_ANALYSIS: nothing to do")
-        return
+        q = select(Paper).where(Paper.raw_text_path.is_not(None)).where(explain_col.is_(None))
+        if external_ids:
+            q = q.where(Paper.external_id.in_(external_ids))
+        elif day:
+            q = q.where(Paper.day == day)
 
-    for p in rows:
-        try:
-            record_paper_event(session, paper_id=p.id, stage="explain", status="started")
-            path = Path(p.raw_text_path or "")
-            if not path.exists():
-                msg = f"raw_text_path missing on disk: {p.raw_text_path}"
-                record_paper_event(session, paper_id=p.id, stage="explain", status="failed", error=msg)
-                print(f"WARN: {msg}")
-                continue
+        rows = session.exec(q.order_by(Paper.id.asc()).limit(max_n)).all()
 
-            text = path.read_text(encoding="utf-8", errors="ignore")
-            text = text[: int(settings.content_analysis_input_chars)]
+        if not rows:
+            print(f"CONTENT_ANALYSIS[{lang0}]: nothing to do")
+            continue
 
-            print(f"CONTENT_ANALYSIS: {p.external_id} -> generating...")
-            p.content_explain_cn = build_content_explain_cn(title=p.title, markdown_text=text)
-            p.updated_at = datetime.utcnow()
-            session.add(p)
-            session.commit()
-            record_paper_event(session, paper_id=p.id, stage="explain", status="success")
-            print(f"CONTENT_ANALYSIS_OK: {p.external_id}")
-        except Exception as e:
-            record_paper_event(session, paper_id=p.id, stage="explain", status="failed", error=str(e))
-            print(f"WARN: content analysis failed for {p.external_id}: {e}")
+        for p in rows:
+            try:
+                record_paper_event(session, paper_id=p.id, stage=stage, status="started")
+                path = Path(p.raw_text_path or "")
+                if not path.exists():
+                    msg = f"raw_text_path missing on disk: {p.raw_text_path}"
+                    record_paper_event(session, paper_id=p.id, stage=stage, status="failed", error=msg)
+                    print(f"WARN: {msg}")
+                    continue
+
+                text = path.read_text(encoding="utf-8", errors="ignore")
+                text = text[: int(settings.content_analysis_input_chars)]
+
+                print(f"CONTENT_ANALYSIS[{lang0}]: {p.external_id} -> generating...")
+                out = build_content_explain(title=p.title, markdown_text=text, lang=lang0)
+                if lang0 == "en":
+                    p.content_explain_en = out
+                else:
+                    p.content_explain_cn = out
+
+                p.updated_at = datetime.utcnow()
+                session.add(p)
+                session.commit()
+                record_paper_event(session, paper_id=p.id, stage=stage, status="success")
+                print(f"CONTENT_ANALYSIS_OK[{lang0}]: {p.external_id}")
+            except Exception as e:
+                record_paper_event(session, paper_id=p.id, stage=stage, status="failed", error=str(e))
+                print(f"WARN: content analysis failed[{lang0}] for {p.external_id}: {e}")
 
 
 
@@ -1400,22 +1459,26 @@ def main():
         # Optional: generated illustrations (Seedream / GLM-Image)
         run_paper_images_for_pending(session, day=active_day, external_ids=active_ids)
 
-        if settings.skip_llm:
-            print("SKIP_LLM=1 -> ingest done; skipping LLM summarization")
+        # `SKIP_LLM` historically only meant: skip the *one-liner* stage.
+        # We keep that behavior for existing ops scripts, but allow running one-liners
+        # in isolation via RUN_ONE_LINER=1.
+        if settings.skip_llm and not settings.run_one_liner:
+            print("SKIP_LLM=1 -> ingest done; skipping one-liner generation")
             return
 
         if not settings.openai_api_key:
             raise SystemExit(
-                "OPENAI_API_KEY is empty. Put it in papertok/.env (do NOT commit) or set SKIP_LLM=1."
+                "OPENAI_API_KEY is empty. Put it in papertok/.env (do NOT commit)."
             )
+
+        langs = [x.strip().lower() for x in (settings.papertok_langs or ["zh"]) if x.strip()]
+        langs = [x for x in langs if x in {"zh", "en"}] or ["zh"]
 
         # generate one-liners for those missing (or rewrite from MinerU if enabled)
         if settings.rewrite_one_liner_from_mineru:
             from datetime import timedelta
 
-            cutoff = datetime.utcnow() - timedelta(
-                minutes=int(settings.rewrite_one_liner_skip_recent_minutes)
-            )
+            cutoff = datetime.utcnow() - timedelta(minutes=int(settings.rewrite_one_liner_skip_recent_minutes))
             q = (
                 select(Paper)
                 .where(Paper.source == "hf_daily")
@@ -1427,20 +1490,25 @@ def main():
             elif active_day:
                 q = q.where(Paper.day == active_day)
 
-            rows = session.exec(
-                q.order_by(Paper.id.asc()).limit(int(settings.rewrite_one_liner_max))
-            ).all()
+            rows = session.exec(q.order_by(Paper.id.asc()).limit(int(settings.rewrite_one_liner_max))).all()
             print(
                 "ONE_LINER: rewrite enabled -> "
-                f"candidates={len(rows)} cutoff_utc={cutoff.isoformat()}"
+                f"candidates={len(rows)} cutoff_utc={cutoff.isoformat()} langs={langs}"
             )
         else:
-            q = select(Paper).where(Paper.source == "hf_daily", Paper.one_liner.is_(None))
+            need = []
+            if "zh" in langs:
+                need.append(Paper.one_liner.is_(None))
+            if "en" in langs:
+                need.append(Paper.one_liner_en.is_(None))
+
+            q = select(Paper).where(Paper.source == "hf_daily").where(or_(*need))
             if active_ids:
                 q = q.where(Paper.external_id.in_(active_ids))
             elif active_day:
                 q = q.where(Paper.day == active_day)
-            rows = session.exec(q).all()
+
+            rows = session.exec(q.order_by(Paper.id.asc()).limit(int(settings.one_liner_max))).all()
 
         for p in rows:
             meta = json.loads(p.meta_json) if p.meta_json else {}
@@ -1463,12 +1531,28 @@ def main():
                     mineru_abstract = None
 
             abstract = mineru_abstract or (hf_abstract if isinstance(hf_abstract, str) else None)
-            p.one_liner = build_one_liner(p.title, abstract)
-            p.display_title = p.title
-            p.updated_at = datetime.utcnow()
-            session.add(p)
-            session.commit()
-            print(f"OK: {p.external_id} -> {p.one_liner}")
+
+            changed = False
+            if "zh" in langs and (settings.rewrite_one_liner_from_mineru or p.one_liner is None):
+                p.one_liner = build_one_liner(p.title, abstract, lang="zh")
+                changed = True
+
+            if "en" in langs and (p.one_liner_en is None):
+                p.one_liner_en = build_one_liner(p.title, abstract, lang="en")
+                changed = True
+
+            if changed:
+                p.display_title = p.display_title or p.title
+                p.updated_at = datetime.utcnow()
+                session.add(p)
+                session.commit()
+
+                msg = f"ONE_LINER_OK: {p.external_id}"
+                if "zh" in langs:
+                    msg += f" zh={((p.one_liner or '')[:60]).strip()}"
+                if "en" in langs:
+                    msg += f" en={((p.one_liner_en or '')[:60]).strip()}"
+                print(msg)
 
 
 if __name__ == "__main__":

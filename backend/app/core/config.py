@@ -18,7 +18,9 @@ class Settings(BaseModel):
 
     openai_base_url: str = os.getenv("OPENAI_BASE_URL", "http://localhost:3003/v1")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    llm_model_text: str = os.getenv("LLM_MODEL_TEXT", "glm-4.7")
+
+    # Text model used for lightweight generations (e.g. one-liner)
+    llm_model_text: str = os.getenv("LLM_MODEL_TEXT", "glm-x-preview")
 
     # MVP helper: allow ingest-only runs.
     skip_llm: bool = os.getenv("SKIP_LLM", "").lower() in {"1", "true", "yes"}
@@ -50,19 +52,30 @@ class Settings(BaseModel):
         str(_PAPERTOK_ROOT / "data" / "raw" / "pdfs_repaired"),
     )
 
-    # Optional: analyze parsed markdown into Chinese teaching-style explanation.
+    # Languages to generate/store for content fields (affects pipeline stages).
+    # Example: PAPERTOK_LANGS=zh,en
+    papertok_langs: list[str] = (
+        [x.strip().lower() for x in os.getenv("PAPERTOK_LANGS", "zh").split(",") if x.strip()]
+        or ["zh"]
+    )
+
+    # Optional: analyze parsed markdown into teaching-style explanation.
     run_content_analysis: bool = os.getenv("RUN_CONTENT_ANALYSIS", "").lower() in {
         "1",
         "true",
         "yes",
     }
     content_analysis_max: int = int(os.getenv("CONTENT_ANALYSIS_MAX", "2"))
-    content_analysis_input_chars: int = int(
-        os.getenv("CONTENT_ANALYSIS_INPUT_CHARS", "80000")
-    )
+    content_analysis_input_chars: int = int(os.getenv("CONTENT_ANALYSIS_INPUT_CHARS", "80000"))
+    # Model used for long-form explanation
     llm_model_analysis: str = os.getenv("LLM_MODEL_ANALYSIS", llm_model_text)
 
     # one-liner quality
+    # NOTE: historically generated at the end of scripts.daily_run. We keep that behavior,
+    # and add RUN_ONE_LINER=1 to allow running the one-liner stage in isolation.
+    run_one_liner: bool = os.getenv("RUN_ONE_LINER", "").lower() in {"1", "true", "yes"}
+    one_liner_max: int = int(os.getenv("ONE_LINER_MAX", "100000"))
+
     one_liner_prefer_mineru: bool = os.getenv("ONE_LINER_PREFER_MINERU", "1").lower() in {
         "1",
         "true",
@@ -75,9 +88,7 @@ class Settings(BaseModel):
         "yes",
     }
     rewrite_one_liner_max: int = int(os.getenv("REWRITE_ONE_LINER_MAX", "10"))
-    rewrite_one_liner_skip_recent_minutes: int = int(
-        os.getenv("REWRITE_ONE_LINER_SKIP_RECENT_MINUTES", "30")
-    )
+    rewrite_one_liner_skip_recent_minutes: int = int(os.getenv("REWRITE_ONE_LINER_SKIP_RECENT_MINUTES", "30"))
 
     db_url: str = os.getenv(
         "DB_URL",
