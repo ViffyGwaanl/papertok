@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useLayoutEffect, useRef } from "react";
 import type { WikiArticle } from "../components/WikiCard";
 
 import { API_BASE, apiUrl } from "../lib/apiBase";
@@ -25,9 +25,14 @@ export function useWikiArticles(opts?: { lang?: string }) {
   // Generation id to ignore stale in-flight fetches after language switch.
   const genRef = useRef(0);
 
+  // Track which generation is currently "loading" so a language switch can always start a new fetch.
+  const loadingGenRef = useRef<number | null>(null);
+
   // When language changes, reset feed so we don't mix languages.
-  useEffect(() => {
+  // useLayoutEffect prevents a "one render" flicker where the old language cards briefly show.
+  useLayoutEffect(() => {
     genRef.current += 1;
+    loadingGenRef.current = null;
     setArticles([]);
     setBuffer([]);
     setOfflineMode(false);
@@ -39,7 +44,11 @@ export function useWikiArticles(opts?: { lang?: string }) {
     // capture the current generation (language version)
     const myGen = genRef.current;
 
-    if (loading) return;
+    // If we're already loading for THIS language generation, don't start another one.
+    // But if the language just switched, allow a new fetch even if the previous generation is still "loading".
+    if (loading && loadingGenRef.current === myGen) return;
+
+    loadingGenRef.current = myGen;
     setLoading(true);
 
     // Ensure we have a bundled offline fallback even on first launch.
@@ -102,7 +111,10 @@ export function useWikiArticles(opts?: { lang?: string }) {
       // keep offlineMode as-is
     } finally {
       // Only clear loading if we're still on the same language generation.
-      if (genRef.current === myGen) setLoading(false);
+      if (genRef.current === myGen) {
+        loadingGenRef.current = null;
+        setLoading(false);
+      }
     }
   };
 

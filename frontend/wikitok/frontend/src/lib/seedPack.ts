@@ -28,22 +28,28 @@ export async function primeOfflineCacheFromSeedPack(): Promise<void> {
   if (_primed) return;
   _primed = true;
 
-  // If we already have a cached feed, don't override it.
-  const existing = offlineCacheGet<any>("papertok:feed:last:limit=20", 1000 * 60 * 60 * 24 * 365);
-  if (existing) return;
+  // If we already have a cached feed (old key or lang-scoped key), don't override it.
+  const existingOld = offlineCacheGet<any>("papertok:feed:last:limit=20", 1000 * 60 * 60 * 24 * 365);
+  const existingZh = offlineCacheGet<any>(
+    "papertok:feed:last:limit=20&lang=zh",
+    1000 * 60 * 60 * 24 * 365
+  );
+  if (existingOld || existingZh) return;
 
   const seed = await loadSeedPack();
   if (!seed?.cards || !Array.isArray(seed.cards) || seed.cards.length === 0) return;
 
   try {
-    // Feed cache key used by useWikiArticles.ts
-    offlineCacheSet("papertok:feed:last:limit=20", seed.cards);
+    // Feed cache key used by useWikiArticles.ts (lang-scoped).
+    // Seed pack is currently ZH-first; EN offline seeding can be added later.
+    offlineCacheSet("papertok:feed:last:limit=20&lang=zh", seed.cards);
 
     const details = seed.details || {};
     for (const k of Object.keys(details)) {
       const d = details[k];
       if (!d || !d.id) continue;
-      offlineCacheSet(`papertok:paper_detail:${d.id}`, d);
+      // Match the keys used by WikiCard.tsx / detail fetch.
+      offlineCacheSet(`papertok:paper_detail:${d.id}:lang=zh`, d);
     }
   } catch {
     // ignore

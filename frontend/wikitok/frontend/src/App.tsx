@@ -21,7 +21,7 @@ function MainPage() {
     localStorage.setItem('papertok:contentLang', contentLang);
   }, [contentLang]);
 
-  const { articles, loading, offlineMode, fetchArticles } = useWikiArticles({ lang: contentLang });
+  const { articles, loading, offlineMode, fetchArticles, setArticles } = useWikiArticles({ lang: contentLang });
   const { likedArticles, toggleLike } = useLikedArticles();
   const observerTarget = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,11 +110,16 @@ function MainPage() {
           {t(contentLang, 'likes')}
         </button>
         <button
-          onClick={() => setContentLang(contentLang === 'zh' ? 'en' : 'zh')}
+          onClick={() => {
+            // Clear current cards immediately so we don't show mixed languages.
+            setArticles([]);
+            setContentLang(contentLang === 'zh' ? 'en' : 'zh');
+          }}
           className="text-sm text-white/70 hover:text-white transition-colors"
           title="Switch language"
         >
-          {contentLang === 'zh' ? '中文' : 'EN'}
+          {/* Show the target language to reduce confusion */}
+          {contentLang === 'zh' ? 'EN' : '中文'}
         </button>
       </div>
 
