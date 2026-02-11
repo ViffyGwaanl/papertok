@@ -12,6 +12,16 @@
 
 ![书同文Suwin 公众号二维码](docs/assets/mp_suwin_qr.jpg)
 
+## 安装（iOS / Android）
+
+- **iOS（TestFlight）**：加入链接（名额无限）
+  - https://testflight.apple.com/join/cxaZq2jv
+
+- **Android（APK 直接安装）**：从 GitHub Releases 下载最新 `*.apk`
+  - https://github.com/ViffyGwaanl/papertok/releases/tag/android-20260211-115914
+
+> Android 首次安装可能需要在系统里允许“安装未知来源应用”。如之前安装过不同签名的包，需先卸载旧包再安装。
+
 ## 当前已经做了什么（现状）
 - ✅ FastAPI + SQLite（SQLModel）后端
 - ✅ 同源单服务：后端托管前端 `dist/`，避免前后端分开导致的黑屏/跨域/localhost 问题
