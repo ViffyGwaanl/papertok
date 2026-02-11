@@ -19,8 +19,10 @@ Goal: run PaperTok locally — fetch Hugging Face Daily Papers **Top 10 of the d
 - **iOS (TestFlight)**
   - https://testflight.apple.com/join/cxaZq2jv
 
-- **Android (APK sideload)**: download the latest `*.apk` from GitHub Releases
-  - https://github.com/ViffyGwaanl/papertok/releases
+- **Android (APK sideload)**: stable “latest build” links (so README doesn’t need to change every release)
+  - APK: https://github.com/ViffyGwaanl/papertok/releases/latest/download/papertok-android-latest.apk
+  - SHA256: https://github.com/ViffyGwaanl/papertok/releases/latest/download/papertok-android-latest.apk.sha256
+  - Full history (rollback): https://github.com/ViffyGwaanl/papertok/releases
 
 > On Android, you may need to allow “Install unknown apps”. If you previously installed a build signed with a different keystore, uninstall the old app first.
 

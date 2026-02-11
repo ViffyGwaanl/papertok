@@ -19,8 +19,10 @@
 - **iOS（TestFlight）**：加入链接（名额无限）
   - https://testflight.apple.com/join/cxaZq2jv
 
-- **Android（APK 直接安装）**：从 GitHub Releases 下载最新 `*.apk`
-  - https://github.com/ViffyGwaanl/papertok/releases/tag/android-20260211-115914
+- **Android（APK 直接安装）**：只保留“最新版”的固定下载链接（不需要每次改 README）
+  - APK： https://github.com/ViffyGwaanl/papertok/releases/latest/download/papertok-android-latest.apk
+  - SHA256： https://github.com/ViffyGwaanl/papertok/releases/latest/download/papertok-android-latest.apk.sha256
+  - 历史版本（可回滚）： https://github.com/ViffyGwaanl/papertok/releases
 
 > Android 首次安装可能需要在系统里允许“安装未知来源应用”。如之前安装过不同签名的包，需先卸载旧包再安装。
 
