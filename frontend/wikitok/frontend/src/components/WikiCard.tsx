@@ -9,6 +9,7 @@ import { useLikedArticles } from '../contexts/LikedArticlesContext';
 
 import { API_BASE, apiUrl } from '../lib/apiBase';
 import { fetchJsonWithOfflineCache, fetchTextWithOfflineCache } from '../lib/offlineCache';
+import { t } from '../lib/i18n';
 
 export interface WikiArticle {
     title: string;
@@ -97,11 +98,11 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                 { maxAgeMs: 1000 * 60 * 60 * 24 * 7, fetchTimeoutMs: 12000 }
             );
             if (fromCache) {
-                setDetailError('（离线缓存内容：可能不是最新）');
+                setDetailError(t(lang, 'cachedMayStale'));
             }
             setDetail(j);
         } catch (e: any) {
-            setDetailError(e?.message || 'Failed to load detail');
+            setDetailError(e?.message || t(lang, 'loadFailed'));
         } finally {
             setDetailLoading(false);
         }
@@ -112,17 +113,17 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
         if (!detailMarkdownUrl) return;
         setMarkdownLoading(true);
         try {
-            const { text: t, fromCache } = await fetchTextWithOfflineCache(
+            const { text: md, fromCache } = await fetchTextWithOfflineCache(
                 detailMarkdownUrl,
                 `papertok:paper_markdown:${detail?.id || article.pageid}:lang=${lang}`,
                 { maxAgeMs: 1000 * 60 * 60 * 24 * 7, fetchTimeoutMs: 15000 }
             );
             if (fromCache && !detailError) {
-                setDetailError('（离线缓存内容：可能不是最新）');
+                setDetailError(t(lang, 'cachedMayStale'));
             }
-            setMarkdownText(t);
+            setMarkdownText(md);
         } catch (e: any) {
-            setMarkdownText(`(加载失败) ${e?.message || ''}`);
+            setMarkdownText(`(${t(lang, 'loadFailed')}) ${e?.message || ''}`);
         } finally {
             setMarkdownLoading(false);
         }
@@ -136,7 +137,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
         // Prefer Capacitor native share inside iOS/Android apps.
         if (Capacitor.isNativePlatform()) {
             try {
-                await Share.share({ title, text, url, dialogTitle: '分享论文' });
+                await Share.share({ title, text, url, dialogTitle: t(lang, 'shareDialogTitle') });
                 return;
             } catch (e) {
                 console.error('Capacitor Share failed:', e);
@@ -156,7 +157,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
         // Fallback: Copy to clipboard
         try {
             await navigator.clipboard.writeText(url);
-            alert('链接已复制');
+            alert(t(lang, 'linkCopied'));
         } catch {
             alert(url);
         }
@@ -382,7 +383,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                     <div className="text-white/70">加载中…</div>
                                 )}
                                 {detailError && (
-                                    <div className="text-red-300">加载失败：{detailError}</div>
+                                    <div className="text-red-300">{t(lang, 'loadFailedPrefix')}{detailError}</div>
                                 )}
 
                                 {!detailLoading && !detailError && detail && tab === 'explain' && (
@@ -416,7 +417,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                                     ),
                                                 }}
                                             >
-                                                {detail.content_explain || detail.content_explain_cn || detail.content_explain_en || '（暂无讲解）'}
+                                                {detail.content_explain || detail.content_explain_cn || detail.content_explain_en || t(lang, 'noExplain')}
                                             </ReactMarkdown>
                                         </div>
                                     </div>
@@ -425,10 +426,10 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                 {!detailLoading && !detailError && detail && tab === 'markdown' && (
                                     <div className="space-y-3">
                                         {!detailMarkdownUrl && (
-                                            <div className="text-white/70">（没有 MinerU markdown）</div>
+                                            <div className="text-white/70">{t(lang, 'noMineruMd')}</div>
                                         )}
                                         {detailMarkdownUrl && markdownLoading && (
-                                            <div className="text-white/70">加载 markdown…</div>
+                                            <div className="text-white/70">{t(lang, 'loadingMarkdown')}</div>
                                         )}
                                         {detailMarkdownUrl && markdownText && (
                                             <div className="text-sm text-white/85 leading-relaxed">

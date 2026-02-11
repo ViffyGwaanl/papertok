@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import { t } from "./lib/i18n";
 import { WikiCard } from "./components/WikiCard";
 import { AdminPage } from "./components/AdminPage";
 import { Loader2, Search, X, Download } from "lucide-react";
@@ -90,7 +91,7 @@ function MainPage() {
         </button>
         {offlineMode && (
           <div className="mt-2 inline-flex items-center gap-2 rounded bg-yellow-500/15 border border-yellow-500/30 px-2 py-1 text-xs text-yellow-100">
-            离线缓存模式：展示上次成功加载的内容
+            {t(contentLang, 'offlineModeTitle')}
           </div>
         )}
       </div>
@@ -100,13 +101,13 @@ function MainPage() {
           onClick={() => setShowAbout(!showAbout)}
           className="text-sm text-white/70 hover:text-white transition-colors"
         >
-          About
+          {t(contentLang, 'about')}
         </button>
         <button
           onClick={() => setShowLikes(!showLikes)}
           className="text-sm text-white/70 hover:text-white transition-colors"
         >
-          Likes
+          {t(contentLang, 'likes')}
         </button>
         <button
           onClick={() => setContentLang(contentLang === 'zh' ? 'en' : 'zh')}
@@ -126,18 +127,22 @@ function MainPage() {
             >
               ✕
             </button>
-            <h2 className="text-xl font-bold mb-4">About PaperTok</h2>
-            <p className="mb-4">
-              A TikTok-style interface for exploring daily trending AI/ML papers.
-            </p>
-            <p className="text-white/70">Author: Gwaanl</p>
-            <p className="text-white/70">公众号：书同文Suwin</p>
+            <h2 className="text-xl font-bold mb-4">{t(contentLang, 'aboutTitle')}</h2>
+            <p className="mb-4">{t(contentLang, 'aboutDesc')}</p>
+            <p className="text-white/70">{t(contentLang, 'author')}</p>
+            <p className="text-white/70">{t(contentLang, 'wechatOA')}</p>
             <p className="text-white/70">
-              GitHub: <a className="underline hover:text-white" href="https://github.com/ViffyGwaanl/papertok" target="_blank" rel="noreferrer">https://github.com/ViffyGwaanl/papertok</a>
+              {t(contentLang, 'github')}
+              <a
+                className="underline hover:text-white"
+                href="https://github.com/ViffyGwaanl/papertok"
+                target="_blank"
+                rel="noreferrer"
+              >
+                https://github.com/ViffyGwaanl/papertok
+              </a>
             </p>
-            <p className="text-white/70 mt-2">
-              PaperTok — a local MVP for browsing trending AI/ML papers.
-            </p>
+            <p className="text-white/70 mt-2">PaperTok — a local MVP for browsing trending AI/ML papers.</p>
           </div>
           <div
             className={`w-full h-full z-[40] top-1 left-1  bg-[rgb(28 25 23 / 43%)] fixed  ${showAbout ? "block" : "hidden"
