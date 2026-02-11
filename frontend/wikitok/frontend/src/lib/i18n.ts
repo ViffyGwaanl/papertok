@@ -15,12 +15,22 @@ const STRINGS: Record<UiLang, Record<string, string>> = {
     github: 'GitHub：',
 
     // detail / markdown
+    captionTitle: '图注',
+    close: '关闭',
+    tabExplain: '讲解',
+    tabOriginal: '原文',
+    tabImages: '图片',
+    page: '页面',
+    loading: '加载中…',
+
     loadFailedPrefix: '加载失败：',
     cachedMayStale: '（离线缓存内容：可能不是最新）',
     noExplain: '（暂无讲解）',
     noMineruMd: '（没有 MinerU markdown）',
     loadingMarkdown: '加载 markdown…',
     loadFailed: '加载失败',
+    noExtractedImages: '（没有提取到图片）',
+    hintExplainOriginalImages: '讲解 / 原文 / 图片 →',
 
     // captions
     noCaption: '（暂无图注）',
@@ -43,12 +53,22 @@ const STRINGS: Record<UiLang, Record<string, string>> = {
     github: 'GitHub: ',
 
     // detail / markdown
+    captionTitle: 'Caption',
+    close: 'Close',
+    tabExplain: 'Explain',
+    tabOriginal: 'Original',
+    tabImages: 'Images',
+    page: 'Page',
+    loading: 'Loading…',
+
     loadFailedPrefix: 'Load failed: ',
     cachedMayStale: '(Offline cached content: may be outdated)',
     noExplain: '(No explanation yet)',
     noMineruMd: '(No MinerU markdown)',
     loadingMarkdown: 'Loading markdown…',
     loadFailed: 'Load failed',
+    noExtractedImages: '(No extracted images)',
+    hintExplainOriginalImages: 'Explain / Original / Images →',
 
     // captions
     noCaption: '(No caption yet)',

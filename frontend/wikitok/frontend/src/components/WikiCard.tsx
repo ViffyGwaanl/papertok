@@ -280,12 +280,12 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                     <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm p-4 safe-p-4 flex items-center justify-center">
                         <div className="w-full max-w-2xl bg-gray-950 border border-white/10 rounded-lg overflow-hidden">
                             <div className="p-3 border-b border-white/10 flex items-center justify-between">
-                                <div className="text-sm text-white/80 truncate">图注</div>
+                                <div className="text-sm text-white/80 truncate">{t(lang, 'captionTitle')}</div>
                                 <button
                                     onClick={() => setCaptionModal(null)}
                                     className="px-3 py-1.5 text-sm rounded bg-white/10 hover:bg-white/20"
                                 >
-                                    关闭
+                                    {t(lang, 'close')}
                                 </button>
                             </div>
                             <div className="p-4 space-y-3">
@@ -323,7 +323,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                         onClick={() => setShowDetail(false)}
                                         className="px-3 py-1.5 text-sm rounded bg-white/10 hover:bg-white/20 whitespace-nowrap shrink-0 min-w-[3.5rem]"
                                     >
-                                        关闭
+                                        {t(lang, 'close')}
                                     </button>
                                 </div>
                             </div>
@@ -333,7 +333,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                     onClick={() => setTab('explain')}
                                     className={`px-3 py-1.5 text-sm rounded ${tab === 'explain' ? 'bg-white/20' : 'bg-white/10 hover:bg-white/20'}`}
                                 >
-                                    讲解
+                                    {t(lang, 'tabExplain')}
                                 </button>
                                 <button
                                     onClick={async () => {
@@ -343,14 +343,14 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                     className={`px-3 py-1.5 text-sm rounded ${tab === 'markdown' ? 'bg-white/20' : 'bg-white/10 hover:bg-white/20'}`}
                                     title="MinerU markdown"
                                 >
-                                    原文
+                                    {t(lang, 'tabOriginal')}
                                 </button>
                                 <button
                                     onClick={() => setTab('images')}
                                     className={`px-3 py-1.5 text-sm rounded ${tab === 'images' ? 'bg-white/20' : 'bg-white/10 hover:bg-white/20'}`}
                                     title="MinerU extracted images"
                                 >
-                                    图片
+                                    {t(lang, 'tabImages')}
                                 </button>
 
                                 <div className="ml-auto flex gap-2">
@@ -372,7 +372,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                             target="_blank"
                                             rel="noreferrer"
                                         >
-                                            <ExternalLink className="w-4 h-4" /> 页面
+                                            <ExternalLink className="w-4 h-4" /> {t(lang, 'page')}
                                         </a>
                                     )}
                                 </div>
@@ -380,7 +380,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
 
                             <div className="flex-1 overflow-y-auto p-4">
                                 {detailLoading && (
-                                    <div className="text-white/70">加载中…</div>
+                                    <div className="text-white/70">{t(lang, 'loading')}</div>
                                 )}
                                 {detailError && (
                                     <div className="text-red-300">{t(lang, 'loadFailedPrefix')}{detailError}</div>
@@ -516,7 +516,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                 {!detailLoading && !detailError && detail && tab === 'images' && (
                                     <div className="space-y-3">
                                         {(detail.images || []).length === 0 ? (
-                                            <div className="text-white/70">（没有提取到图片）</div>
+                                            <div className="text-white/70">{t(lang, 'noExtractedImages')}</div>
                                         ) : (
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                                 {(detail.images || []).slice(0, 60).map((imgUrl, idx) => (
@@ -661,7 +661,7 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                             onClick={openDetail}
                             className="inline-flex items-center gap-2 text-white hover:text-gray-200 drop-shadow-lg"
                         >
-                            <ImageIcon className="w-4 h-4" /> 讲解 / 原文 / 图片 →
+                            <ImageIcon className="w-4 h-4" /> {t(lang, 'hintExplainOriginalImages')}
                         </button>
                         <a
                             href={article.url}
