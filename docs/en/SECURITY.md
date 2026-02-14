@@ -29,13 +29,13 @@ PaperTok splits status endpoints:
 
 ### L1: Cloudflare (edge)
 - **Cloudflare Tunnel**: outbound connection; no port forwarding.
-- **Force HTTPS (required)**: enable *Always Use HTTPS* (or equivalent redirect rule) so `http://` always redirects to `https://`.
+- **Force HTTPS (required)**: enable *Always Use HTTPS* (or an equivalent redirect rule) so `http://` always redirects to `https://`.
   - Reason: HTTP is plaintext and can be sniffed/modified; dangerous for Access cookies and Admin tokens.
-  - Verify:
+  - Verify (should hold for every public hostname you expose):
     ```bash
     curl -I http://papertok.ai/
     ```
-    Expect `301/308` with `Location: https://papertok.ai/...`.
+    It should return `301/308` with `Location: https://...`.
 - Optional: WAF / rate limiting once you see scans or real traffic.
 
 ### L2: Cloudflare Access (identity)
@@ -45,7 +45,8 @@ Protect admin surfaces (recommended on canonical `papertok.ai`):
 
 For the alias domain `papertok.net`, prefer a full-site **301** to `papertok.ai` to avoid maintaining a second Access config.
 
-Policy: allowlist your email(s), using One-time PIN or an IdP.
+**Additional strong recommendation**: protect any non-public internal service entrypoint with Access.
+- If you expose an internal gateway/tool service via Tunnel, it must be covered by Access (email allowlist) and rate limits.
 
 ### L3: Backend admin token (application)
 - Set `PAPERTOK_ADMIN_TOKEN` and require header `X-Admin-Token` for `/api/admin/*`.

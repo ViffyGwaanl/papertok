@@ -37,12 +37,12 @@ class AppConfig(BaseModel):
 
     feed_require_generated_images: bool = Field(
         default=True,
-        description="Only show papers that have generated PaperImage(s) for the selected provider",
+        description="Only show papers that have at least one generated PaperImage (any provider)",
     )
 
     paper_images_display_provider: str = Field(
         default="seedream",
-        description="Which provider feed cards should display: seedream|glm|auto",
+        description="Primary provider ordering for generated images: seedream|glm|auto",
     )
 
     image_caption_context_chars: int = Field(

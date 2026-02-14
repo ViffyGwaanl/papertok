@@ -4,15 +4,18 @@
 
 > Principle: prioritize engineering work that improves stability, operability, and portability. Product iteration builds on top of that.
 
-## Current status
+## Current status (done / validated)
 - ✅ Cloudflare Tunnel public ingress + Cloudflare Access protects `/admin*` and `/api/admin*`; backend `X-Admin-Token` adds a second gate.
 - ✅ Canonical domain: `papertok.net/*` → `papertok.ai/$1` (301, preserve query).
-- ✅ Same-origin on mobile/public: frontend uses `window.location.origin` (no hard-coded `:8000`).
+- ✅ Single-origin hosting: backend serves frontend `dist/`; frontend uses `window.location.origin` (no hard-coded `:8000`).
 - ✅ `API_BASE` single source of truth: `src/lib/apiBase.ts`.
-- ✅ iOS/Android Capacitor internal build runs on real devices.
-- ✅ Android release APK distribution via GitHub Releases (+ `.sha256`), with an ops note about iCloud Drive/File Provider paths possibly failing background reads (`Resource deadlock avoided`).
-- ✅ ZH/EN bilingual pipeline (schema + `lang=zh|en|both` API + pipeline + Web UI toggle) and EN end-to-end regression for latest day.
-- ✅ Native-app-friendly language toggle fix (feed refresh path); requires rebuilding the app shell to take effect.
+- ✅ iOS/Android Capacitor internal builds run on real devices; runbooks documented.
+- ✅ Android internal distribution: GitHub Releases + `.sha256` verification; also a stable “latest” release (`android-latest`) with fixed asset names.
+- ✅ ZH/EN bilingual pipeline (schema + `lang=zh|en|both` API + pipeline + Web UI toggle); EN end-to-end regression complete for latest day.
+- ✅ Bilingual backfill converged for last 7 days using strict per-day acceptance (8 metrics).
+- ✅ Scheme B (release-based deployment): versioned releases + `current` symlink switches.
+- ✅ prod shared de-symlinked: `shared/.env`, `shared/data`, and `shared/venv` are real files/dirs (no dependency on workspace checkout).
+- ✅ (Redacted) Supports an additional isolated tunnel for exposing internal local services (domain/port mapping is not documented publicly).
 - ✅ S0 security hardening:
   - `/api/status` is public summary (no local paths/log paths)
   - `/api/admin/status` is admin-only
@@ -21,19 +24,16 @@
 
 ---
 
-## P0 (1–3 days): stability & UX
+## P0 (1–3 days): security & stability finish
 
 1) **Cloudflare: force HTTPS (must-do)**
 - Enable *Always Use HTTPS* (or equivalent redirect rule)
-- Verify: `curl -I http://papertok.ai/` → `301/308` → `https://...`
+- Verify (should hold for every public hostname you expose):
+  - `curl -I http://papertok.ai/` → `301/308` → `https://...`
 
-2) **Bilingual production backfill (make EN truly usable)**
-- Latest day EN is complete.
-- Added a per-day acceptance monitor (strict 8-metric criteria; only reports when a day is fully complete) to reduce noise and make progress auditable.
-- Decide backfill scope:
-  - A) last 7/30 days
-  - B) full history (higher cost; must throttle/queue)
-- Standard operating procedure: enqueue by `day`/`lang` batches (avoid “run all” in one shot)
+2) **Cloudflare Access: protect every non-public / sensitive entrypoint**
+- Already protected: `/admin*` and `/api/admin*`.
+- If you expose any additional internal service via Tunnel, it must also be covered by Access (email allowlist).
 
 3) **Frontend diagnosability**
 - Clearer error states (network/auth/offline cache hit) + one-click retry
@@ -47,23 +47,18 @@
 - Define worker stale-job policy (timeouts, retries, concurrency)
 
 5) **/api/status semantics**
-- Current `failed_by_stage` is historical; add “currently unresolved failures” view
+- Current `failed_by_stage` is historical; add a “currently unresolved failures” view
 - Reduce noise from historical failures
 
-6) **Internal distribution (keep apps in sync with web)**
-- App shells do not auto-update web assets; every frontend change requires rebuilding/releasing a new app build.
-- iOS: runbook for Archive → TestFlight or Development `.ipa`
-- Android: signed release APK + GitHub Releases
-  - Avoid uploading from iCloud Drive/File Provider folders; copy assets to a local folder first.
+6) **Health checks: HTTP method compatibility**
+- `HEAD /healthz` and `HEAD /api/status` may return 404 while `GET` returns 200.
+- Either:
+  - A) external health checks use `GET`, or
+  - B) add explicit `@app.head` handlers (recommended)
 
 ---
 
 ## P1 (1–2 weeks): ops engineering
-
-0) **Finish Scheme B isolation: prod `shared/venv`**
-- Rebuild `~/papertok-deploy/shared/venv` using Python 3.13
-- Recommend `PIP_NO_CACHE_DIR=1` to reduce disk spikes
-- Add disk free-space fail-fast check
 
 1) **Release retention policy (avoid disk blow-up)**
 - Keep last N releases; never delete what `current` points to
@@ -73,7 +68,7 @@
 - Lightweight option: DB-only backup (derived artifacts can be recomputed)
 
 3) **Config health checks**
-- `/api/status` health checklist:
+- Add a checklist to `/api/status` (public) or `/api/admin/status` (admin):
   - LLM/VLM endpoint reachable?
   - Seedream/GLM keys present?
   - MinerU available?
@@ -86,6 +81,10 @@
 5) **Extra public ingress hardening (optional)**
 - Cloudflare WAF/rate limit (especially `/api/papers/*`)
 - If write operations are added: CSRF/auth design required
+
+6) **Disk cleanup SOP**
+- Keep only prod `shared/venv` + optional dev venv
+- Define safe cache cleanup steps for HF/ModelScope (accepting re-download cost)
 
 ---
 

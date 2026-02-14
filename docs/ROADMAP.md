@@ -2,36 +2,36 @@
 
 > 原则：优先做“提升稳定性、可运维性、可迁移性”的工程任务；产品功能迭代在此基础上推进。
 
-## 状态说明
-- **已落地**：Cloudflare Tunnel 公网入口 + Cloudflare Access 保护 `/admin*` 与 `/api/admin*`；后端 `X-Admin-Token` 双重校验。
-- **已落地**：域名规范化：`papertok.net/*` → `papertok.ai/$1`（301 永久重定向，保留 query）。
-- **已修复**：公网/移动端同源加载（前端默认使用 `window.location.origin`；不再硬编码 `:8000`）。
-- **已落地**：前端 `API_BASE` 单点真理（`src/lib/apiBase.ts`），避免 WebView/同源/localhost 分叉。
-- **已验收**：iOS/Android Capacitor internal build 已在真机安装运行（本地 Xcode/Android Studio）。
-- **已落地**：Android release APK 发布链路（GitHub Releases + `.sha256`），并记录了 iCloud/互传目录可能导致后台读取失败（`Resource deadlock avoided`）的限制与规避方法。
-- **已落地**：ZH/EN 双语链路（schema + API `lang=zh|en|both` + pipeline + Web UI `中文/EN` 切换），并完成 latest day 英文端到端回归。
-- **已修复**：移动端语言切换竞态（切换后外层 one-liner 残留旧语言）——需要通过重新打包 App 获取修复。
-- **S0 安全收口完成**：
-  - `GET /api/status` 变为公共摘要（不含本机路径/日志路径/敏感运维信息）
+## 状态说明（已落地 / 已验证）
+- ✅ Cloudflare Tunnel 公网入口 + Cloudflare Access 保护 `/admin*` 与 `/api/admin*`；后端 `X-Admin-Token` 双重校验。
+- ✅ 域名规范化：`papertok.net/*` → `papertok.ai/$1`（301 永久重定向，保留 query）。
+- ✅ 单服务同源：后端直接 serve 前端 dist；前端默认使用 `window.location.origin`（不再硬编码 `:8000`）。
+- ✅ 前端 `API_BASE` 单点真理（`src/lib/apiBase.ts`），避免 WebView/同源/localhost 分叉。
+- ✅ iOS/Android Capacitor internal build 已在真机安装运行；已记录 runbook。
+- ✅ Android 内部分发链路：GitHub Releases + `.sha256` 校验；同时提供一个“永远指向最新”的稳定下载资产（`android-latest`）。
+- ✅ ZH/EN 双语链路：schema + API `lang=zh|en|both` + pipeline + Web UI 切换；已完成 latest day 英文端到端回归。
+- ✅ 双语回填已跑通并收敛：最近 7 天按“按天 8 指标验收”标准达标（减少 spam、进度可控）。
+- ✅ Scheme B（release-based deploy）已稳定使用：releases + `current` 原子切换。
+- ✅ prod shared 去 symlink 化已完成：`shared/.env`、`shared/data`、`shared/venv` 均为真实文件/目录（不再依赖 workspace checkout）。
+- ✅ （已脱敏）支持额外的独立 tunnel 暴露本机内部服务入口（不在公开文档中披露域名与端口映射）。
+- ✅ S0 安全收口完成：
+  - `GET /api/status` 为公共摘要（不含本机路径/日志路径/敏感运维信息）
   - 新增 `GET /api/admin/status`（管理版）
   - `GET /api/papers/{id}` 不再暴露本机绝对路径
-  - 新增 `ops/security_smoke.sh` 作为信息泄露回归测试
+  - `ops/security_smoke.sh` 作为信息泄露回归测试
 
 ---
 
-## P0（短期，1-3 天）：稳定性/体验收尾
+## P0（短期，1-3 天）：安全与稳定性收尾
 
 1) **Cloudflare：强制 HTTPS（安全必做）**
 - 在 Cloudflare 开启 *Always Use HTTPS*（或等价 Redirect Rule）
-- 验收：`curl -I http://papertok.ai/` 应返回 `301/308` → `https://papertok.ai/...`
+- 验收（对所有对外暴露的 hostname 都应成立）：
+  - `curl -I http://papertok.ai/` 应返回 `301/308` → `https://papertok.ai/...`
 
-2) **双语生产回填（让 EN 真正“可用”）**
-- latest day 已完成 EN 端到端（one-liner/explain/caption/images）。
-- 已增加“按天完成验收”监控脚本（8 指标严格达标才汇报），用于减少 spam、让回填进度更可控。
-- 下一步选择回填范围：
-  - A) 最近 7/30 天
-  - B) 全量历史（成本较高，需限速/排队）
-- 为回填建立标准作业：按 `day`/`lang` 分批 enqueue（避免全库一次性跑崩）
+2) **Cloudflare Access：保护所有“非公开/敏感入口”**
+- 已保护：`/admin*` 与 `/api/admin*`。
+- 若未来额外暴露任何内部服务入口（例如内部网关/工具服务），也必须一并纳入 Access（邮箱 allowlist）。
 
 3) **前端可诊断性（Loading 卡住时能自救）**
 - 在 UI 上显示更明确的错误态（请求失败/权限被拦截/离线缓存命中），并提供一键重试
@@ -49,31 +49,26 @@
   - per paper 只取最近一次事件，或用 DB 缺失字段作为“当前状态”
 - 面板上减少“历史失败把人吓到”的噪声
 
-6) **Internal 分发/打包（让 App 跟上 Web 功能）**
-- 结论：App 壳不会自动更新 Web 前端；每次前端变更都需要重新打包/发布（这也是为什么 App 里“语言切换问题”无法靠刷新解决）。
-- iOS：补齐 “Archive → TestFlight” 或 “Development .ipa” 的 runbook
-- Android：release 签名 APK + GitHub Releases 分发
-  - 注意：不要把待上传 APK 放在 iCloud/互传目录（可能触发 `Resource deadlock avoided`）；先拷到本地路径再上传
+6) **健康检查/监控的 HTTP 方法兼容**
+- 目前 `HEAD /healthz` 与 `HEAD /api/status` 可能返回 404（但 `GET` 是 200）。
+- 两条路：
+  - A) 外部健康检查统一改用 `GET`
+  - B) 后端显式补 `@app.head` handlers（推荐做 B，减少误判）
 
 ---
 
 ## P1（中期，1-2 周）：运维工程化
 
-0) **完成 Scheme B 最后一块隔离：prod `shared/venv`**
-- 用 Python 3.13 重建 `~/papertok-deploy/shared/venv`（避免 3.14 的 pydantic-core/PyO3 坑）
-- 安装依赖时建议 `PIP_NO_CACHE_DIR=1`，降低磁盘峰值
-- 增加磁盘空间检查（free space < 阈值直接 fail-fast）
-
 1) **Release 保留策略（防磁盘膨胀）**
 - 自动保留最近 N 个 releases，其余清理
-- 清理策略需保证：current 指向的 release 永不删除
+- 清理策略需保证：`current` 指向的 release 永不删除
 
 2) **备份/恢复策略**
 - 脚本化：备份 SQLite + 关键数据目录（pdf/mineru/gen/logs）
 - 提供“只备份 DB、衍生物可重算”的轻量模式
 
 3) **配置健康检查（自检面板）**
-- `/api/status` 增加 health checklist：
+- `/api/status`（public）或 `/api/admin/status`（admin）增加 health checklist：
   - LLM/VLM endpoint 可达？
   - Seedream/GLM key 是否存在？
   - MinerU CLI 是否存在？
@@ -85,14 +80,18 @@
 
 5) **公网入口的进一步防护（可选）**
 - Cloudflare WAF/Rate limit（尤其对 `/api/papers/*`）
-- 只要未来开放写入（点赞/收藏/评论等），必须先做 CSRF/鉴权设计
+- 如果未来开放写入（点赞/收藏/评论等），必须先做 CSRF/鉴权设计
+
+6) **磁盘清理策略（建议列入常规运维）**
+- venv 只保留 prod shared/venv + dev（可选）
+- 清理 HF/ModelScope cache 的 SOP（可接受“未来需要重新下载模型”的前提下）
 
 ---
 
 ## P2（长期）：可迁移/可扩展
 
 1) **平台可迁移**
-- 抽象数据目录（如引入 `PAPERTOK_DATA_DIR`），把“代码路径”和“数据路径”彻底分离
+- 引入 `PAPERTOK_DATA_DIR`，把“代码路径”和“数据路径”彻底分离
 - 逐步实现 Linux server / Windows 本地运行（见 `PLATFORM_PLAN.md`）
 
 2) **数据库演进**

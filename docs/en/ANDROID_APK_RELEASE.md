@@ -68,16 +68,13 @@ Outputs:
 ---
 
 ## 6) Recommended distribution: GitHub Releases
-Create a release and upload assets (APK + sha256).
 
-Use the Releases page as the single source of truth for downloads:
-- https://github.com/ViffyGwaanl/papertok/releases
+### 6.1 Timestamped releases (audit-friendly)
 
-Example:
 ```bash
 TAG="android-YYYYMMDD-HHMMSS"
 APK="papertok/exports/android/<your>.apk"
-SHA="$APK.sha256"
+SHA="${APK}.sha256"
 
 gh release create "$TAG" \
   --repo ViffyGwaanl/papertok \
@@ -87,23 +84,46 @@ gh release create "$TAG" \
   "$APK" "$SHA"
 ```
 
-### Important: iCloud Drive / File Provider directories
-If your APK is under an iCloud Drive / File Provider managed path (e.g. `~/Library/Mobile Documents/...`), some background processes may fail to read the file contents and you may see:
-- `OSError: [Errno 11] Resource deadlock avoided`
+### 6.2 Stable “latest” download URL (strongly recommended)
 
-This can break `cp/ditto/gh release create` uploads.
+Maintain a moving, **non-prerelease** tag `android-latest` and upload fixed-name assets:
+- `papertok-android-latest.apk`
+- `papertok-android-latest.apk.sha256`
 
-Workaround: copy the `*.apk` and `*.sha256` to a local non-iCloud folder first (e.g. `~/Downloads/` or `papertok/exports/android/`), then upload.
+This keeps a stable link for README/announcements:
+- `https://github.com/ViffyGwaanl/papertok/releases/latest/download/papertok-android-latest.apk`
+
+Update by overwriting assets (same release, same link):
+
+```bash
+TAG="android-latest"
+APK_SRC="papertok/exports/android/<your>.apk"
+SHA_SRC="${APK_SRC}.sha256"
+
+cp "$APK_SRC" /tmp/papertok-android-latest.apk
+cp "$SHA_SRC" /tmp/papertok-android-latest.apk.sha256
+
+gh release upload "$TAG" \
+  --repo ViffyGwaanl/papertok \
+  --clobber \
+  /tmp/papertok-android-latest.apk \
+  /tmp/papertok-android-latest.apk.sha256
+```
 
 ---
 
-## 7) Remember to bump versionCode
-Edit: `papertok/frontend/wikitok/frontend/android/app/build.gradle`
+## 7) iCloud Drive pitfall (important)
 
-```gradle
-versionCode 1
-versionName "1.0"
-```
+If you keep APKs under iCloud Drive (e.g. `~/Library/Mobile Documents/...`), some automation/background contexts may fail to read them with:
+- `OSError: [Errno 11] Resource deadlock avoided`
+
+Workaround: copy the APK to a non-iCloud local directory (e.g. `/tmp/` or `~/Downloads/`) before `gh release upload`.
+
+---
+
+## 8) Remember to bump versionCode
+Edit (prefer the kts file):
+- `papertok/frontend/wikitok/frontend/android/app/build.gradle.kts` (or legacy `build.gradle`)
 
 Rules:
 - Every release: `versionCode` must increase.
@@ -111,6 +131,17 @@ Rules:
 
 ---
 
-## 8) Receiver-side notes
+## 9) Receiver-side notes
 - First install: allow “unknown sources”.
 - If signature mismatch (debug vs release): uninstall old build first.
+
+---
+
+## 10) Optional: use AAB for Google Play
+
+```bash
+cd papertok/frontend/wikitok/frontend/android
+./gradlew bundleRelease
+```
+
+APK is still best for direct installs.

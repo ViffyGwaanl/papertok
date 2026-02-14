@@ -338,7 +338,7 @@ export function AdminPage() {
             </label>
 
             <label className="block text-sm">
-              <div className="text-white/70 mb-1">Feed require generated images</div>
+              <div className="text-white/70 mb-1">Feed require generated images (any provider)</div>
               <select
                 value={effective.feed_require_generated_images ? '1' : '0'}
                 onChange={(e) =>
@@ -356,13 +356,13 @@ export function AdminPage() {
                 }
                 className="w-full bg-gray-900 border border-white/10 rounded px-3 py-2 text-sm"
               >
-                <option value="1">Yes (hide papers missing generated images)</option>
+                <option value="1">Yes (hide papers with no generated images)</option>
                 <option value="0">No</option>
               </select>
             </label>
 
             <label className="block text-sm">
-              <div className="text-white/70 mb-1">Feed image provider</div>
+              <div className="text-white/70 mb-1">Primary feed image provider (ordering)</div>
               <select
                 value={effective.paper_images_display_provider || 'seedream'}
                 onChange={(e) =>

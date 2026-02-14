@@ -19,7 +19,7 @@ This doc describes how to deploy PaperTok on a single Mac mini using:
 - Shared state:
   - `~/papertok-deploy/shared/.env`
   - `~/papertok-deploy/shared/data/`
-  - `~/papertok-deploy/shared/venv/` (optional)
+  - `~/papertok-deploy/shared/venv/` (prod Python venv)
 
 ---
 
@@ -49,7 +49,7 @@ ops/release/switch_current.sh <release-id>
 ```
 
 Notes:
-- Avoid switching while long-running jobs are active (e.g. bilingual image generation / caption backfills).
+- Avoid switching while long-running jobs are active.
   - Switching restarts server/worker and may interrupt or duplicate the running job.
   - Recommended: let the queue drain (or finish critical jobs), then switch atomically.
 
@@ -75,13 +75,59 @@ This is the safest way to adopt Scheme B without moving state.
 
 ### Phase 2: de-symlink shared (production hardening)
 After Scheme B proves stable, migrate shared to be real files/dirs under `DEPLOY_ROOT/shared/`:
-- `shared/.env` becomes a real file (copied)
-- `shared/data` becomes a real directory (migrated)
-- optionally rebuild `shared/venv` as a real venv
+- `shared/.env` becomes a real file
+- `shared/data` becomes a real directory
+- `shared/venv` becomes a real venv directory
 
 Benefits:
 - prod no longer depends on your dev/workspace checkout
 - reduces risk of accidental production breakage when cleaning/editing workspace
+
+---
+
+## Current hardening status (recommended target state)
+
+In a hardened setup:
+- `~/papertok-deploy/shared/.env` is a **real file**
+- `~/papertok-deploy/shared/data` is a **real directory**
+- `~/papertok-deploy/shared/venv` is a **real venv directory** (Python 3.13 recommended)
+- `~/papertok-deploy/current/backend/.venv` is a **symlink** to `~/papertok-deploy/shared/venv`
+
+This lets you safely clean workspace/dev checkouts without breaking production.
+
+---
+
+## Migrating `shared/venv`: symlink → real directory
+
+This step is optional but strongly recommended.
+
+### Option A (recommended): copy an existing venv (fast, safest)
+
+```bash
+# Example paths (adjust as needed)
+SRC=/path/to/old/.venv
+DEPLOY_ROOT=~/papertok-deploy
+TMP="$DEPLOY_ROOT/shared/venv.__tmp__"
+
+rm -rf "$TMP"
+mkdir -p "$TMP"
+rsync -a --delete "$SRC/" "$TMP/"
+
+# validate
+"$TMP/bin/python" -c 'import mineru; print("mineru ok")'
+
+# swap atomically
+mv "$DEPLOY_ROOT/shared/venv" "$DEPLOY_ROOT/shared/venv.bak.$(date +%Y%m%d-%H%M%S)"
+mv "$TMP" "$DEPLOY_ROOT/shared/venv"
+```
+
+Then ensure the current release uses it:
+```bash
+ln -sfn "$DEPLOY_ROOT/shared/venv" "$DEPLOY_ROOT/current/backend/.venv"
+```
+
+### Option B: rebuild venv from scratch
+Prefer Python 3.13. MinerU/torch/opencv make this slow and large.
 
 ---
 
@@ -97,7 +143,3 @@ Before rebuilding `shared/venv`, ensure you have multiple GB of free space.
 
 Releases accumulate under `DEPLOY_ROOT/releases/*`.
 Define a retention policy: keep last N releases, and never delete the version pointed to by `current`.
-
-### Current hardening status
-- `.env` and `data/` are designed to live outside releases.
-- For maximum isolation, replace the `shared/venv` symlink with an independent venv.

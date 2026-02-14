@@ -29,6 +29,56 @@ def _safe_rel_url(root: str, file_path: str, *, mount_prefix: str) -> str | None
         return None
 
 
+def _normalize_provider_name(x: str | None) -> str | None:
+    if not x:
+        return None
+    x0 = x.strip().lower()
+    if not x0:
+        return None
+    if x0 in {"seedream", "ark"}:
+        return "seedream"
+    if x0 in {"glm", "glm-image", "glm_image"}:
+        return "glm"
+    return x0
+
+
+def _preferred_provider_order(display: str) -> list[str]:
+    """Return provider ordering preference used for display.
+
+    - If display is seedream/glm: that provider goes first.
+    - If display is auto: follow generation provider preference in Settings.
+    """
+
+    d0 = (display or "seedream").strip().lower()
+    if d0 in {"seedream", "glm"}:
+        other = "glm" if d0 == "seedream" else "seedream"
+        return [d0, other]
+
+    # auto: follow generation preference
+    pref = [_normalize_provider_name(x) for x in (settings.paper_images_providers or [])]
+    pref = [x for x in pref if x]
+
+    if not pref:
+        pref = ["seedream", "glm"]
+
+    # de-dupe, preserve order
+    out: list[str] = []
+    seen: set[str] = set()
+    for x in pref:
+        if x in seen:
+            continue
+        seen.add(x)
+        out.append(x)
+
+    # ensure the common providers exist in the ordering
+    for x in ["seedream", "glm"]:
+        if x not in seen:
+            out.append(x)
+            seen.add(x)
+
+    return out
+
+
 @router.get("/random")
 def get_random_papers(
     limit: int = Query(20, ge=1, le=50),
@@ -90,7 +140,8 @@ def get_random_papers(
             )
 
         if app_cfg.feed_require_generated_images:
-            display = (app_cfg.paper_images_display_provider or "seedream").strip().lower()
+            # We treat paper_images_display_provider as a *display ordering* hint.
+            # Feed gating should only require that at least one generated image exists.
             img_subq = (
                 select(PaperImage.id)
                 .where(PaperImage.paper_id == Paper.id)
@@ -99,8 +150,6 @@ def get_random_papers(
                 .where(PaperImage.enabled == True)  # noqa: E712
                 .where(PaperImage.url_path.is_not(None))
             )
-            if display in {"seedream", "glm"}:
-                img_subq = img_subq.where(PaperImage.provider == display)
 
             q = q.where(exists(img_subq))
 
@@ -119,8 +168,8 @@ def get_random_papers(
         rows = session.exec(select(Paper).where(Paper.id.in_(chosen_ids))).all()
 
     # Preload generated images for chosen papers (avoid N+1 queries)
-    # We can keep multiple providers (seedream/glm) in DB, but the feed returns
-    # the provider selected by app config (DB).
+    # We keep multiple providers (seedream/glm) in DB. The feed returns *both*
+    # providers' images (if present), with the selected provider ordered first.
 
     by_paper: dict[int, list[PaperImage]] = {}
     with Session(engine) as session:
@@ -134,9 +183,8 @@ def get_random_papers(
             .where(PaperImage.enabled == True)  # noqa: E712
             .where(PaperImage.url_path.is_not(None))
         )
-        if display in {"seedream", "glm"}:
-            q_imgs = q_imgs.where(PaperImage.provider == display)
 
+        # Always fetch all providers. We'll order them later when building card thumbnails.
         imgs = session.exec(
             q_imgs.order_by(PaperImage.paper_id.asc(), PaperImage.provider.asc(), PaperImage.order_idx.asc())
         ).all()
@@ -174,35 +222,30 @@ def get_random_papers(
         # Prefer a stable external URL for "Read more" (frontend opens in a new tab)
         url = p.url or (f"https://arxiv.org/abs/{p.external_id}" if p.external_id else "")
 
-        gen_sources: list[str] = []
         imgs_for_paper = by_paper.get(p.id, [])
 
-        if display == "auto":
-            # Prefer providers in the order configured for generation
-            pref = [x.strip().lower() for x in (settings.paper_images_providers or []) if x.strip()]
-            # normalize
-            norm: list[str] = []
-            for x in pref:
-                if x in {"seedream", "ark"}:
-                    norm.append("seedream")
-                elif x in {"glm", "glm-image", "glm_image"}:
-                    norm.append("glm")
-            if not norm:
-                norm = ["seedream", "glm"]
+        # Return *both* providers' images, ordered by the selected provider.
+        # Example: display=seedream => [seedream 3] + [glm 3]
+        provider_order = _preferred_provider_order(display)
 
-            by_prov: dict[str, list[PaperImage]] = {}
-            for img in imgs_for_paper:
-                by_prov.setdefault(img.provider, []).append(img)
+        by_prov: dict[str, list[PaperImage]] = {}
+        for img in imgs_for_paper:
+            key = _normalize_provider_name(img.provider) or img.provider
+            by_prov.setdefault(key, []).append(img)
 
-            chosen: list[PaperImage] = []
-            for prov in norm:
-                if by_prov.get(prov):
-                    chosen = by_prov[prov]
-                    break
+        # Sort inside each provider by order_idx
+        for prov, imgs0 in by_prov.items():
+            imgs0.sort(key=lambda x: x.order_idx)
 
-            gen_sources = [img.url_path for img in chosen if img.url_path]
-        else:
-            gen_sources = [img.url_path for img in imgs_for_paper if img.url_path]
+        ordered_imgs: list[PaperImage] = []
+        for prov in provider_order:
+            ordered_imgs.extend(by_prov.pop(prov, []))
+
+        # Append any remaining providers (future-proof)
+        for prov in sorted(by_prov.keys()):
+            ordered_imgs.extend(by_prov[prov])
+
+        gen_sources = [img.url_path for img in ordered_imgs if img.url_path]
 
         # thumbnail: prefer generated image (relative URL under /static/gen) else HF thumbnail
         thumb_src = (gen_sources[0] if gen_sources else None) or p.thumbnail_url
@@ -301,9 +344,12 @@ def get_paper_detail(
         except Exception:
             pass
 
-    # generated images (seedream)
+    # generated images (seedream + glm)
     gen_images: list[dict] = []
     with Session(engine) as session:
+        app_cfg = get_effective_app_config(session)
+        display = (app_cfg.paper_images_display_provider or "seedream").strip().lower()
+
         q = (
             select(PaperImage)
             .where(PaperImage.paper_id == paper.id)
@@ -313,8 +359,22 @@ def get_paper_detail(
         )
         if lang0 in {"zh", "en"}:
             q = q.where(PaperImage.lang == lang0)
-        imgs = session.exec(q.order_by(PaperImage.order_idx.asc())).all()
+
+        imgs = session.exec(q.order_by(PaperImage.provider.asc(), PaperImage.order_idx.asc())).all()
+
+        provider_order = _preferred_provider_order(display)
+        by_prov: dict[str, list[PaperImage]] = {}
         for img in imgs:
+            key = _normalize_provider_name(img.provider) or img.provider
+            by_prov.setdefault(key, []).append(img)
+
+        ordered: list[PaperImage] = []
+        for prov in provider_order:
+            ordered.extend(by_prov.pop(prov, []))
+        for prov in sorted(by_prov.keys()):
+            ordered.extend(by_prov[prov])
+
+        for img in ordered:
             gen_images.append(
                 {
                     "url": img.url_path,

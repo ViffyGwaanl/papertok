@@ -56,7 +56,7 @@ PAPERTOK_KEY_PASSWORD=你的key密码
 ```bash
 java -version
 ```
-应能看到类似 `17.x`，而不是 “Unable to locate a Java Runtime”。
+应能看到类似 `17.x`。
 
 ---
 
@@ -73,106 +73,102 @@ bash ops/build_android_release_apk.sh
 - `papertok/exports/android/*.apk`
 - `papertok/exports/android/*.sha256`
 
-你可以直接把 APK 发给别人安装；更推荐的“可追溯分发方式”是发布到 GitHub Releases（见下一节）。
-
 ---
 
-## 6) 推荐分发方式：发布到 GitHub Releases
+## 6) 推荐分发方式：GitHub Releases
 
 这样做的好处：
-- 有固定下载链接，避免聊天记录翻找
-- 可写 release notes（版本、变更点、已知问题）
-- 可附带 sha256 校验，收包的人能验证文件未被篡改
+- 可追溯（每次发包一个 tag）
+- 可写 release notes
+- 可附带 sha256 校验
 
-建议把 **GitHub Releases 页面** 作为唯一分发入口：
-- https://github.com/ViffyGwaanl/papertok/releases
+### 6.1 时间戳 release（审计用，推荐）
 
-### 6.1 选择 tag 命名
-
-推荐格式（时间戳为主，简单稳定）：
+推荐 tag 格式：
 - `android-YYYYMMDD-HHMMSS`
 
-例如：`android-20260208-040411`
+例如：`android-20260211-105244`
 
-### 6.2 用 `gh` 创建 Release 并上传 APK
-
-前提：你已登录 GitHub CLI：
-```bash
-gh auth status
-```
-
-然后在项目仓库根目录执行（把文件名换成你实际的 APK 路径）：
+创建 release 并上传资源（建议 prerelease，因为是 internal build）：
 
 ```bash
 cd /path/to/papertok
 
-TAG="android-20260208-040411"
+TAG="android-YYYYMMDD-HHMMSS"
 APK="papertok/exports/android/<your>.apk"
 SHA="${APK}.sha256"
 
-# 创建 release 并上传资源（建议 prerelease，因为是 internal build）
 gh release create "$TAG" \
   --repo ViffyGwaanl/papertok \
   --title "PaperTok Android APK ($TAG)" \
-  --notes "Internal build. See docs/ANDROID_APK_RELEASE.md for build/signing." \
+  --notes "Internal build." \
   --prerelease \
   "$APK" "$SHA"
 ```
 
-发布后，把 Release 页面链接发给对方即可。
+### 6.2 一个“永远最新”的 stable 下载链接（强烈推荐）
 
-### 6.2.1 iCloud/互传目录注意事项（重要）
+为了让 README、群公告等永远指向最新 APK，可以维护一个非 prerelease 的 moving tag：`android-latest`，并上传固定文件名资产：
+- `papertok-android-latest.apk`
+- `papertok-android-latest.apk.sha256`
 
-如果你的 APK 放在 iCloud Drive / File Provider 管理的目录（例如：
-`~/Library/Mobile Documents/com~apple~CloudDocs/互传`），有概率出现 **“能看到文件，但后台进程读取内容失败”** 的情况，典型报错：
-- `OSError: [Errno 11] Resource deadlock avoided`
+这样下载链接可以固定为：
+- `https://github.com/ViffyGwaanl/papertok/releases/latest/download/papertok-android-latest.apk`
 
-这会导致：`cp/ditto/gh release create` 上传时读文件失败。
+更新方式（复用同一个 release，不改链接）：
 
-**解决办法**：先用 Finder 拖拽（或在终端拷贝）把 `*.apk` 和 `*.apk.sha256` 复制到一个“本地非 iCloud”的路径再上传，例如：
-- `~/Downloads/`
-- `papertok/exports/android/`
-
-### 6.3 收包的人如何校验 sha256（可选但推荐）
-
-macOS/Linux：
 ```bash
-shasum -a 256 <apk-file>
-```
+TAG="android-latest"
+APK_SRC="papertok/exports/android/<your>.apk"
+SHA_SRC="${APK_SRC}.sha256"
 
-Windows（PowerShell）：
-```powershell
-Get-FileHash .\app.apk -Algorithm SHA256
-```
+# 1) 确保 release 存在（非 prerelease）
+# 如已存在可跳过
+# gh release create "$TAG" --repo ViffyGwaanl/papertok --title "PaperTok Android (latest)" --notes "Moving tag for internal distribution."
 
-与 `.sha256` 文件里的值一致即可。
+# 2) 上传固定文件名（--clobber 覆盖同名资产）
+cp "$APK_SRC" /tmp/papertok-android-latest.apk
+cp "$SHA_SRC" /tmp/papertok-android-latest.apk.sha256
+
+gh release upload "$TAG" \
+  --repo ViffyGwaanl/papertok \
+  --clobber \
+  /tmp/papertok-android-latest.apk \
+  /tmp/papertok-android-latest.apk.sha256
+```
 
 ---
 
-## 7) 每次发新版本：记得 bump versionCode
+## 7) iCloud/互传目录的坑（重要）
 
-文件：`papertok/frontend/wikitok/frontend/android/app/build.gradle`
+在 macOS 上，如果你把待上传 APK 放在 iCloud Drive（例如：
+`~/Library/Mobile Documents/com~apple~CloudDocs/互传`），在某些自动化/后台上下文里读取会失败：
+- `OSError: [Errno 11] Resource deadlock avoided`
 
-```gradle
-versionCode 1
-versionName "1.0"
-```
+**规避方式**：发布前先把 APK 拷贝到一个非 iCloud 的本地目录（例如 `/tmp/` 或 `~/Downloads/`），再执行 `gh release upload`。
+
+---
+
+## 8) 每次发新版本：记得 bump versionCode
+
+文件（优先看 kts）：
+- `papertok/frontend/wikitok/frontend/android/app/build.gradle.kts`（或旧版 `build.gradle`）
 
 规则：
 - **每次发布新 APK 必须把 `versionCode` +1**（否则对方无法“覆盖安装更新”）
-- `versionName` 是给人看的版本号（建议一起改，比如 1.0 → 1.0.1）
+- `versionName` 是给人看的版本号（建议一起改）
 
 ---
 
-## 8) 安装侧注意事项（给收包的人）
+## 9) 安装侧注意事项（给收包的人）
 
-- 首次安装：需要允许“安装未知来源应用”（从微信/浏览器/文件管理器安装时系统会提示）。
+- 首次安装：需要允许“安装未知来源应用”。
 - 如果对方之前装过你用**不同签名**打的包（比如 debug 版），会提示签名不一致：
   - 解决：卸载旧包再安装新包。
 
 ---
 
-## 9) 可选：更推荐 Play 分发时用 AAB
+## 10) 可选：更推荐 Play 分发时用 AAB
 
 如果未来要上 Google Play，推荐产物是 AAB：
 

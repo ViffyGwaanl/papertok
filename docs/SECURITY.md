@@ -31,17 +31,22 @@ PaperTok 推荐把防护拆成 4 层（从外到内）：
 - **Cloudflare Tunnel**：由本机主动建立到 Cloudflare 的出站连接；无需开端口映射。
 - **强制 HTTPS（必须）**：开启 Cloudflare 的 *Always Use HTTPS*（或等价的 Redirect Rule），确保 `http://` 永远重定向到 `https://`。
   - 原因：HTTP 明文可被窃听/篡改；对 Access cookie / Admin Token 尤其危险。
-  - 验收：`curl -I http://papertok.ai/` 应返回 `301/308` 且 `Location: https://papertok.ai/...`。
+  - 验收（对每个对外暴露的 hostname 都应成立）：
+    ```bash
+    curl -I http://papertok.ai/
+    ```
+    应返回 `301/308` 且 `Location: https://...`。
 - 可选：WAF / Rate limiting（当访问量上来或被扫时再加）。
 
 ### L2：Cloudflare Access（身份层）
-- 建议用 Access 只保护管理面（推荐主域 `papertok.ai`）：
+- 建议用 Access 保护管理面（推荐主域 `papertok.ai`）：
   - `papertok.ai/admin*`
   - `papertok.ai/api/admin*`
 
   对于别名域 `papertok.net`，推荐做 **301 永久重定向**到 `papertok.ai`，从而无需再维护第二套 Access 配置。
-  （如果你刻意保留 `papertok.net` 直连访问，那就也需要为 `papertok.net/admin*` 与 `papertok.net/api/admin*` 配置 Access。）
-- 策略：仅允许指定邮箱登录（One-time PIN 或接入 Google IdP 均可）。
+
+- **额外建议（强烈）**：对任何“非公开内部服务入口”也开启 Access。
+  - 例如：本地网关/工具服务等，一旦通过 Tunnel 暴露到公网，必须 Access（邮箱 allowlist）+ 速率限制。
 
 ### L3：后端管理口令（应用层）
 - `PAPERTOK_ADMIN_TOKEN`：启用后，所有 `/api/admin/*` 需要 `X-Admin-Token`。

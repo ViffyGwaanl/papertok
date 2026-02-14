@@ -76,6 +76,8 @@
 ## 13) Android APK distribution
 - Signed release APK script: `ops/build_android_release_apk.sh`
 - Distribution via GitHub Releases with `.sha256`
+- Moving tag `android-latest` for a stable download URL
+- iCloud Drive pitfall documented (`Resource deadlock avoided`)
 
 ## 14) Feed “complete item” gating (explain + captions + images)
 - DB config: `feed_require_explain`, `feed_require_image_captions`, `feed_require_generated_images`
@@ -84,32 +86,26 @@
 - Releases under `~/papertok-deploy/releases/<id>`
 - Active version via `~/papertok-deploy/current`
 
-## 16) Dev environment (frozen dataset regression)
+## 16) prod shared de-symlinked (hardening)
+- `~/papertok-deploy/shared/.env` as a real file
+- `~/papertok-deploy/shared/data` as a real directory
+- `~/papertok-deploy/shared/venv` as a real venv directory (Python 3.13 recommended)
+- `~/papertok-deploy/current/backend/.venv` points to `shared/venv` (prod no longer depends on workspace venv)
+
+## 17) Dev environment (frozen dataset regression)
 - Dev repo + shared state under `~/papertok-dev/...`
 - Script: `ops/dev/run_full_pipeline_existing.sh`
 
-## 17) ZH/EN bilingual full chain
+## 18) ZH/EN bilingual full chain
 - Schema: `one_liner_en`, `content_explain_en`, `image_captions_en_json`, `paper_images.lang`
 - API: `lang=zh|en|both` for feed and detail; language-aware gating (Strategy A)
 - Pipeline + Jobs: one-liner/explain/caption/images support `lang`
 - Web UI: `中文/EN` toggle + UI i18n improvements
 
-## 18) Backfill orchestration: last-7-days bilingual convergence + per-day acceptance monitor
-- Enqueue script: `ops/backfill/run_bilingual_backfill_last7_days.sh`
-- Acceptance monitor: `ops/backfill/monitor_day_completion.py`
-  - strict 8-metric criteria (zh/en liner, zh/en explain, zh/en captions, glm/seedream images totals)
-  - only prints when a day is complete; uses a state file to avoid duplicate reports
-
-## 19) Android release distribution (GitHub Releases)
-- Published internal build APKs via `gh release create` (APK + `.sha256`)
-- Documented macOS iCloud Drive/File Provider limitation:
-  - files under `~/Library/Mobile Documents/...` may raise `Resource deadlock avoided` for background reads
-  - workaround: copy assets to a local non-iCloud folder (e.g. `~/Downloads/` or `exports/android/`) before uploading
-
-## 20) Native-app-friendly language toggle fix
-- Fixed the case where the feed card one-liner stayed in the previous language after switching.
-- Key ideas: reset feed on language switch + generation-aware in-flight request handling + lang-scoped offline cache keys.
+## 19) Bilingual backfill convergence (per-day acceptance)
+- Added strict per-day acceptance monitor (8 metrics)
+- Last-7-days backfill converged and passed acceptance
 
 ---
 
-_Last updated: 2026-02-11_
+_Last updated: 2026-02-14_
