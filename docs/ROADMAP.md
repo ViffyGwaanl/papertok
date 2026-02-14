@@ -13,7 +13,6 @@
 - ✅ 双语回填已跑通并收敛：最近 7 天按“按天 8 指标验收”标准达标（减少 spam、进度可控）。
 - ✅ Scheme B（release-based deploy）已稳定使用：releases + `current` 原子切换。
 - ✅ prod shared 去 symlink 化已完成：`shared/.env`、`shared/data`、`shared/venv` 均为真实文件/目录（不再依赖 workspace checkout）。
-- ✅ （已脱敏）支持额外的独立 tunnel 暴露本机内部服务入口（不在公开文档中披露域名与端口映射）。
 - ✅ S0 安全收口完成：
   - `GET /api/status` 为公共摘要（不含本机路径/日志路径/敏感运维信息）
   - 新增 `GET /api/admin/status`（管理版）

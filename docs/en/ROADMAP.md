@@ -15,7 +15,6 @@
 - ✅ Bilingual backfill converged for last 7 days using strict per-day acceptance (8 metrics).
 - ✅ Scheme B (release-based deployment): versioned releases + `current` symlink switches.
 - ✅ prod shared de-symlinked: `shared/.env`, `shared/data`, and `shared/venv` are real files/dirs (no dependency on workspace checkout).
-- ✅ (Redacted) Supports an additional isolated tunnel for exposing internal local services (domain/port mapping is not documented publicly).
 - ✅ S0 security hardening:
   - `/api/status` is public summary (no local paths/log paths)
   - `/api/admin/status` is admin-only

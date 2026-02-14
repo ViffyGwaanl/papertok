@@ -46,7 +46,7 @@ PaperTok 推荐把防护拆成 4 层（从外到内）：
   对于别名域 `papertok.net`，推荐做 **301 永久重定向**到 `papertok.ai`，从而无需再维护第二套 Access 配置。
 
 - **额外建议（强烈）**：对任何“非公开内部服务入口”也开启 Access。
-  - 例如：本地网关/工具服务等，一旦通过 Tunnel 暴露到公网，必须 Access（邮箱 allowlist）+ 速率限制。
+  - 例如：本地网关/工具服务等，只要对公网开放，就必须 Access（邮箱 allowlist）+ 速率限制。
 
 ### L3：后端管理口令（应用层）
 - `PAPERTOK_ADMIN_TOKEN`：启用后，所有 `/api/admin/*` 需要 `X-Admin-Token`。

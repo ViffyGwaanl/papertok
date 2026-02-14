@@ -46,7 +46,7 @@ Protect admin surfaces (recommended on canonical `papertok.ai`):
 For the alias domain `papertok.net`, prefer a full-site **301** to `papertok.ai` to avoid maintaining a second Access config.
 
 **Additional strong recommendation**: protect any non-public internal service entrypoint with Access.
-- If you expose an internal gateway/tool service via Tunnel, it must be covered by Access (email allowlist) and rate limits.
+- If you expose an internal gateway/tool service to the public Internet, it must be covered by Access (email allowlist) and rate limits.
 
 ### L3: Backend admin token (application)
 - Set `PAPERTOK_ADMIN_TOKEN` and require header `X-Admin-Token` for `/api/admin/*`.
