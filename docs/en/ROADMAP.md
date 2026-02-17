@@ -12,6 +12,7 @@
 - ✅ iOS/Android Capacitor internal builds run on real devices; runbooks documented.
 - ✅ Android internal distribution: GitHub Releases + `.sha256` verification; also a stable “latest” release (`android-latest`) with fixed asset names.
 - ✅ ZH/EN bilingual pipeline (schema + `lang=zh|en|both` API + pipeline + Web UI toggle); EN end-to-end regression complete for latest day.
+- ✅ EPUB (pandoc) generation: package MinerU markdown into EPUB3; served via `/static/epub`; UI provides a download entry in the detail modal “Original” tab; daily supports `RUN_EPUB=1`.
 - ✅ Bilingual backfill converged for last 7 days using strict per-day acceptance (8 metrics).
 - ✅ Scheme B (release-based deployment): versioned releases + `current` symlink switches.
 - ✅ prod shared de-symlinked: `shared/.env`, `shared/data`, and `shared/venv` are real files/dirs (no dependency on workspace checkout).
@@ -84,6 +85,11 @@
 6) **Disk cleanup SOP**
 - Keep only prod `shared/venv` + optional dev venv
 - Define safe cache cleanup steps for HF/ModelScope (accepting re-download cost)
+
+7) **EPUB translation / bilingual editions (next PR)**
+- Goal: build a Chinese translation edition and a “stacked bilingual (EN over ZH)” edition based on the EN original EPUB.
+- Constraints: use the same `OPENAI_BASE_URL` + `OPENAI_API_KEY`, model `kimi-k2`.
+- Engineering approach: paragraph/sentence-aligned chunking (avoid broken sentences), `concurrency=4`, reuse translation cache where possible.
 
 ---
 

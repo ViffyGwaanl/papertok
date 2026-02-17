@@ -10,6 +10,7 @@
 - ✅ iOS/Android Capacitor internal build 已在真机安装运行；已记录 runbook。
 - ✅ Android 内部分发链路：GitHub Releases + `.sha256` 校验；同时提供一个“永远指向最新”的稳定下载资产（`android-latest`）。
 - ✅ ZH/EN 双语链路：schema + API `lang=zh|en|both` + pipeline + Web UI 切换；已完成 latest day 英文端到端回归。
+- ✅ EPUB（pandoc）生成：从 MinerU markdown 打包 EPUB3，通过 `/static/epub` 提供下载；前端详情弹窗「原文」页提供下载入口；daily 支持 `RUN_EPUB=1` 自动生成。
 - ✅ 双语回填已跑通并收敛：最近 7 天按“按天 8 指标验收”标准达标（减少 spam、进度可控）。
 - ✅ Scheme B（release-based deploy）已稳定使用：releases + `current` 原子切换。
 - ✅ prod shared 去 symlink 化已完成：`shared/.env`、`shared/data`、`shared/venv` 均为真实文件/目录（不再依赖 workspace checkout）。
@@ -84,6 +85,11 @@
 6) **磁盘清理策略（建议列入常规运维）**
 - venv 只保留 prod shared/venv + dev（可选）
 - 清理 HF/ModelScope cache 的 SOP（可接受“未来需要重新下载模型”的前提下）
+
+7) **EPUB 翻译/双语版（下一个 PR）**
+- 目标：在现有 EN 原文 EPUB 的基础上，生成中文译文版 + “上下双语对照”版
+- 技术约束：仍使用同一套 `OPENAI_BASE_URL` + `OPENAI_API_KEY`，模型 `kimi-k2`
+- 工程策略：段落/句子对齐切块（避免断句），并发 `concurrency=4`，可复用翻译缓存
 
 ---
 
