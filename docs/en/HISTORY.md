@@ -108,4 +108,20 @@
 
 ---
 
-_Last updated: 2026-02-14_
+## 20) EPUB (pandoc) generation & distribution
+- Dependency: `pandoc` (Homebrew). In launchd environments, set an absolute `PANDOC_BIN` like `/opt/homebrew/bin/pandoc`.
+- Backend: build EPUB3 from MinerU markdown; package extracted images; inject VLM captions as footnotes.
+- Cover: prefer an AI-generated illustration (provider order follows `paper_images_display_provider`).
+- Artifacts: written to `EPUB_OUT_ROOT/<external_id>/` and served via `/static/epub`
+  - Canonical filename: `<external_id>.en.epub`
+  - Legacy alias: `en.epub` remains accessible
+- API: `GET /api/papers/{id}` exposes `epub_url_en`
+- Frontend: detail modal “Original” tab includes a “Download EPUB” button
+- Ops:
+  - Jobs: `epub_build_scoped` / `epub_build_regen_scoped`
+  - Daily: `RUN_EPUB=1` enables automatic builds; `EPUB_MAX` caps per-run work
+  - One-shot normalization: `python -m scripts.epub_normalize_filenames`
+
+---
+
+_Last updated: 2026-02-17_

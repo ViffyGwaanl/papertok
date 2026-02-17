@@ -22,7 +22,8 @@
   - `/static/pdfs` → `PAPERS_PDF_DIR`
   - `/static/gen` → `PAPER_GEN_IMAGES_DIR`（Seedream）
   - `/static/gen_glm` → `PAPER_GEN_IMAGES_GLM_DIR`（GLM-Image）
-- 前端：WikiTok 风格竖滑 + 详情弹窗（讲解/MD/图片图注/PDF/生成图）
+  - `/static/epub` → `EPUB_OUT_ROOT`（pandoc 生成 EPUB3，文件名包含 external_id）
+- 前端：WikiTok 风格竖滑 + 详情弹窗（讲解/MD/图片图注/PDF/生成图/EPUB）
 
 ---
 
@@ -57,6 +58,7 @@
 - `paper_images_scoped` / `paper_images_regen_scoped`
 - `content_analysis_scoped` / `content_analysis_regen_scoped`
 - `one_liner_scoped` / `one_liner_regen_scoped`
+- `epub_build_scoped` / `epub_build_regen_scoped`
 - `paper_retry_stage`
 - `paper_events_backfill`
 
@@ -176,6 +178,20 @@
 
 ---
 
+## 22) EPUB（pandoc）生成与分发
+- 依赖：`pandoc`（Homebrew 安装；launchd 环境建议配置 `PANDOC_BIN=/opt/homebrew/bin/pandoc`）
+- 后端：从 MinerU markdown 生成 EPUB3，抽图随书打包；VLM 图注以脚注形式注入
+- 封面：优先选择已生成的竖屏插图（按 `paper_images_display_provider` 的 provider 顺序）
+- 产物：落盘到 `EPUB_OUT_ROOT/<external_id>/`，并通过 `/static/epub` 静态挂载
+  - canonical 文件名：`<external_id>.en.epub`
+  - 兼容旧文件名：`en.epub` 仍可访问
+- API：`GET /api/papers/{id}` 返回 `epub_url_en`
+- 前端：详情弹窗的「原文」Tab 增加“下载 EPUB”按钮
+- 运维：
+  - Jobs：`epub_build_scoped` / `epub_build_regen_scoped`
+  - Daily：支持 `RUN_EPUB=1` 自动生成；`EPUB_MAX` 控制单次上限
+  - 一次性规范化脚本：`python -m scripts.epub_normalize_filenames`
+
 ---
 
-_Last updated: 2026-02-14_
+_Last updated: 2026-02-17_

@@ -72,6 +72,7 @@ Path(settings.mineru_out_root).mkdir(parents=True, exist_ok=True)
 Path(settings.papers_pdf_dir).mkdir(parents=True, exist_ok=True)
 Path(settings.paper_gen_images_dir).mkdir(parents=True, exist_ok=True)
 Path(settings.paper_gen_images_glm_dir).mkdir(parents=True, exist_ok=True)
+Path(settings.epub_out_root).mkdir(parents=True, exist_ok=True)
 app.mount(
     "/static/mineru",
     StaticFiles(directory=settings.mineru_out_root),
@@ -91,6 +92,11 @@ app.mount(
     "/static/gen_glm",
     StaticFiles(directory=settings.paper_gen_images_glm_dir),
     name="gen_glm",
+)
+app.mount(
+    "/static/epub",
+    StaticFiles(directory=settings.epub_out_root),
+    name="epub",
 )
 
 

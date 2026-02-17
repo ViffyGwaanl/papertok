@@ -42,6 +42,11 @@ type PaperDetail = {
     pdf_url?: string | null;
     pdf_local_url?: string | null;
     raw_markdown_url?: string | null;
+
+    // EPUB artifacts (current PR: EN only)
+    epub_url?: string | null;
+    epub_url_en?: string | null;
+
     images?: string[];
     image_captions?: Record<string, string>;
 };
@@ -365,6 +370,8 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
                                             <ExternalLink className="w-4 h-4" /> PDF
                                         </a>
                                     )}
+
+                                    {/* EPUB download button moved to the Original tab */}
                                     {detail?.url && (
                                         <a
                                             className="px-3 py-1.5 text-sm rounded bg-white/10 hover:bg-white/20 inline-flex items-center gap-2"
@@ -425,6 +432,19 @@ export function WikiCard({ article, lang = 'zh' }: WikiCardProps) {
 
                                 {!detailLoading && !detailError && detail && tab === 'markdown' && (
                                     <div className="space-y-3">
+                                        {(detail.epub_url_en || detail.epub_url) && (
+                                            <div>
+                                                <a
+                                                    className="px-3 py-1.5 text-sm rounded bg-white/10 hover:bg-white/20 inline-flex items-center gap-2"
+                                                    href={`${API_BASE}${(detail.epub_url_en || detail.epub_url) as string}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    download={`${(detail.external_id || 'paper')}.en.epub`}
+                                                >
+                                                    <ExternalLink className="w-4 h-4" /> {t(lang, 'downloadEpub')}
+                                                </a>
+                                            </div>
+                                        )}
                                         {!detailMarkdownUrl && (
                                             <div className="text-white/70">{t(lang, 'noMineruMd')}</div>
                                         )}

@@ -81,6 +81,18 @@ SUPPORTED: dict[str, list[str]] = {
         "scripts.job_handlers.paper_events_backfill",
     ],
 
+    # epub
+    "epub_build_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.epub_build",
+    ],
+    "epub_build_regen_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.epub_build",
+    ],
+
     # per-paper retry
     "paper_retry_stage": [
         str(BACKEND_DIR / ".venv" / "bin" / "python"),
@@ -196,6 +208,8 @@ def _execute_job(job_id: int, job_type: str, log_path: Path) -> None:
         "image_caption_regen_scoped",
         "paper_images_scoped",
         "paper_images_regen_scoped",
+        "epub_build_scoped",
+        "epub_build_regen_scoped",
         "paper_retry_stage",
     }:
         with Session(engine) as session:

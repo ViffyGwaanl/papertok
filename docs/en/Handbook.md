@@ -16,6 +16,7 @@ PaperTok is a locally deployed “papers TikTok/WikiTok” app:
 - Generate figure captions via VLM (ZH `image_captions_json` + EN `image_captions_en_json`)
 - Web UI supports content language toggle (`中文/EN`)
 - Generate vertical scrapbook/magazine collage illustrations via **Seedream + GLM-Image**
+- Optional: package MinerU markdown into **EPUB3 (pandoc)**, downloadable from the detail modal “Original” tab
 - Backend: FastAPI provides APIs and serves the built frontend `dist/`
 
 ### 1.1 Goals
@@ -132,6 +133,9 @@ Default DB config gates feed to only show items with:
 - `data/mineru/` → `/static/mineru`
 - `data/gen_images/` (Seedream) → `/static/gen`
 - `data/gen_images_glm/` (GLM) → `/static/gen_glm`
+- `data/epub/` → `/static/epub`
+  - Naming (EN): `/static/epub/<external_id>/<external_id>.en.epub` (e.g. `/static/epub/2602.04705/2602.04705.en.epub`)
+  - Legacy alias: `/static/epub/<external_id>/en.epub` is still accessible
 - `data/logs/`
 
 ### 4.2 Main tables (conceptual)
@@ -159,6 +163,11 @@ Common keys (excerpt):
 - `PAPERTOK_LANGS=zh,en`
 - `PAPER_IMAGES_DISPLAY_PROVIDER` + `PAPER_IMAGES_GENERATE_ONLY_DISPLAY=1`
 - `IMAGE_CAPTION_CONCURRENCY`
+- EPUB (optional):
+  - `RUN_EPUB=1`: generate EPUBs at the end of the daily pipeline (currently EN original edition)
+  - `EPUB_MAX=200`: per-run cap (set it higher than the max expected papers per day)
+  - `EPUB_OUT_ROOT`: output directory (typically points to `shared/data/epub`)
+  - `PANDOC_BIN`: pandoc path (launchd environments should use an absolute path, e.g. `/opt/homebrew/bin/pandoc`)
 
 ### 5.3 DB config (Admin)
 - `feed_require_explain`
@@ -178,6 +187,9 @@ Common keys (excerpt):
 - `GET /api/papers/random?limit=20&lang=zh|en|both&day=latest|YYYY-MM-DD|all`
   - Language-aware gating (Strategy A): `lang=en` requires the EN chain to be complete; `lang=zh` requires the ZH chain.
 - `GET /api/papers/{id}?lang=zh|en|both`
+  - If EPUB is available, fields include:
+    - `epub_url_en` (canonical EN edition, e.g. `/static/epub/2602.04705/2602.04705.en.epub`)
+    - `epub_url` (reserved: a future “best edition for current lang” alias)
 
 ### 6.3 Status & ops observability
 - Public:
@@ -206,6 +218,7 @@ Stages (conceptual):
 5) explanation (ZH/EN)
 6) captions (ZH/EN)
 7) generated images (ZH/EN, providers)
+8) EPUB (optional)
 
 `paper_events` records started/success/failed/skipped per stage.
 
@@ -220,6 +233,7 @@ Supported job types (excerpt):
 - `content_analysis_scoped`, `content_analysis_regen_scoped`
 - `image_caption_scoped`, `image_caption_regen_scoped`
 - `paper_images_scoped`, `paper_images_regen_scoped`
+- `epub_build_scoped`, `epub_build_regen_scoped`
 - `paper_events_backfill`
 - `paper_retry_stage`
 

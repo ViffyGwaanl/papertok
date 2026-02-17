@@ -32,6 +32,8 @@ npm run cap:sync:android
 
 > 注意（非常重要）：iOS/Android App 壳里打包的是当时那一版的 `dist/` 静态资源。
 > 所以**网页端更新不会自动同步到已安装的 App**。
+> 
+> 例如：新增的“下载 EPUB（原文 Tab 内）”按钮、UI 文案更新等，都需要重新打包/重新安装才能在 App 里看到。
 > - 如果你在 Web 上看到新功能（例如 `中文/EN` 切换），但 App 里没有：说明 App 需要重新打包/重新安装（或发布新的 APK/TestFlight）。
 
 ---

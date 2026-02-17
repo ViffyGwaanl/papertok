@@ -6,6 +6,7 @@
 - Canonical domain: `https://papertok.ai`
 - Alias: `https://papertok.net` → **301** redirect to `papertok.ai`
 - Bilingual: Web UI supports `中文/EN`; API supports `lang=zh|en|both`
+- EPUB: optionally package MinerU markdown into EPUB3 (pandoc), downloadable from the detail modal “Original” tab
 - Admin: protected by Cloudflare Access (email allowlist) + backend `X-Admin-Token`
 - Android distribution: signed release APK via GitHub Releases (+ `.sha256`)
 

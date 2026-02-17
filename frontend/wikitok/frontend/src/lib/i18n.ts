@@ -21,6 +21,7 @@ const STRINGS: Record<UiLang, Record<string, string>> = {
     tabOriginal: '原文',
     tabImages: '图片',
     page: '页面',
+    downloadEpub: '下载 EPUB',
     loading: '加载中…',
 
     loadFailedPrefix: '加载失败：',
@@ -59,6 +60,7 @@ const STRINGS: Record<UiLang, Record<string, string>> = {
     tabOriginal: 'Original',
     tabImages: 'Images',
     page: 'Page',
+    downloadEpub: 'Download EPUB',
     loading: 'Loading…',
 
     loadFailedPrefix: 'Load failed: ',

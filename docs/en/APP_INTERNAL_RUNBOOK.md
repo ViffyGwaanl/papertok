@@ -32,7 +32,7 @@ npm run cap:sync:android
 
 **Important:** the app shell bundles the `dist/` assets at build time.
 Web updates do **not** automatically update already-installed apps.
-To get new features (e.g. the `中文/EN` toggle), you must rebuild and reinstall / publish a new APK/TestFlight build.
+To get new features (e.g. the `中文/EN` toggle or the EPUB download button in the “Original” tab), you must rebuild and reinstall / publish a new APK/TestFlight build.
 
 ---
 

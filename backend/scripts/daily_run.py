@@ -1705,6 +1705,29 @@ def main():
         # Optional: generated illustrations (Seedream / GLM-Image)
         run_paper_images_for_pending(session, day=active_day, external_ids=active_ids)
 
+        # Optional: build EPUBs (pandoc)
+        if settings.run_epub:
+            try:
+                from app.services.epub_builder import build_epubs_for_pending
+
+                epub_max = int(settings.epub_max or 10)
+
+                # Generate EPUBs for *all papers in DB for the active day* (not only HF Top10).
+                # Note: build_epubs_for_pending already filters to papers that have MinerU markdown.
+                day0 = active_day
+
+                print(f"EPUB_DAILY: run_epub=1 day={day0} scope=all_in_day max={epub_max}")
+                build_epubs_for_pending(
+                    session,
+                    day=day0,
+                    external_ids=None,
+                    langs=["en"],
+                    max_n=epub_max,
+                    overwrite=False,
+                )
+            except Exception as e:
+                print(f"WARN: EPUB_DAILY failed: {e}")
+
         # `SKIP_LLM` historically only meant: skip the *one-liner* stage.
         # We keep that behavior for existing ops scripts, but allow running one-liners
         # in isolation via RUN_ONE_LINER=1.

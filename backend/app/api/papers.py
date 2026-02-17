@@ -408,6 +408,16 @@ def get_paper_detail(
         "image_captions": image_captions,
         "image_captions_en": (image_captions_en if lang0 == "both" else None),
         "generated_images": gen_images,
+        "epub_url_en": paper.epub_url_en,
+        "epub_url_zh": (paper.epub_url_zh if lang0 in {"zh", "both"} else None),
+        "epub_url_bilingual": (paper.epub_url_bilingual if lang0 == "both" else None),
+        "epub_url": (
+            paper.epub_url_en
+            if lang0 == "en"
+            else paper.epub_url_zh
+            if lang0 == "zh"
+            else None
+        ),
         "created_at": paper.created_at,
         "updated_at": paper.updated_at,
     }

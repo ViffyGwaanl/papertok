@@ -35,6 +35,13 @@ def _ensure_sqlite_columns() -> None:
             "thumbnail_url": "VARCHAR",
             "content_explain_cn": "TEXT",
             "image_captions_json": "TEXT",
+            # EPUB
+            "epub_path_en": "VARCHAR",
+            "epub_url_en": "VARCHAR",
+            "epub_path_zh": "VARCHAR",
+            "epub_url_zh": "VARCHAR",
+            "epub_path_bilingual": "VARCHAR",
+            "epub_url_bilingual": "VARCHAR",
         }
 
         for name, sql_type in needed.items():

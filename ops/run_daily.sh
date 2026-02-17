@@ -51,6 +51,10 @@ export PAPER_GEN_IMAGE_SIZE=${PAPER_GEN_IMAGE_SIZE:-1440x2560}
 # GLM-Image size (<=2048)
 export PAPER_GLM_IMAGE_SIZE=${PAPER_GLM_IMAGE_SIZE:-1088x1920}
 
+# EPUB generation (pandoc)
+export RUN_EPUB=${RUN_EPUB:-1}
+export EPUB_MAX=${EPUB_MAX:-10}
+
 # ensure venv
 if [[ -x .venv/bin/python ]]; then
   exec .venv/bin/python -m scripts.daily_run

@@ -51,6 +51,10 @@ SUPPORTED_JOB_TYPES = {
     # paper_events
     "paper_events_backfill": "Backfill paper_events for current DB state (adds skipped/success markers)",
 
+    # epub
+    "epub_build_scoped": "Build EPUB (pandoc) for a scoped set (fill missing)",
+    "epub_build_regen_scoped": "Build EPUB (pandoc) for a scoped set (overwrite)",
+
     # per-paper retry
     "paper_retry_stage": "Retry one pipeline stage for a specific paper (pdf/mineru/explain/caption/paper_images)",
 }

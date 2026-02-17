@@ -14,6 +14,7 @@ PaperTok 是一个本地部署的“论文版 TikTok/WikiTok”应用：
 - 用 VLM 给抽取图片生成图注（中文 `image_captions_json` + 英文 `image_captions_en_json`）
 - 前端支持内容语言切换（右上角 `中文/EN`）
 - 同时用两家图像模型生成“实体手工剪贴簿/杂志拼贴”风格竖屏图：**Seedream + GLM-Image**
+- 可选：把 MinerU 的 markdown 打包成 **EPUB3（pandoc）**，在详情弹窗的「原文」页下载
 - 后端 FastAPI 提供 API，并托管前端 `dist/`，手机端竖滑浏览
 
 ### 1.1 设计目标
@@ -143,6 +144,9 @@ HF_DATE=2026-02-03 \
 - `data/mineru/`：MinerU 输出（markdown + images，静态挂载 `/static/mineru`）
 - `data/gen_images/`：Seedream 生成图（挂载 `/static/gen`）
 - `data/gen_images_glm/`：GLM 生成图（挂载 `/static/gen_glm`）
+- `data/epub/`：EPUB 产物（挂载 `/static/epub`）
+  - 命名规范（EN）：`/static/epub/<external_id>/<external_id>.en.epub`（例如：`/static/epub/2602.04705/2602.04705.en.epub`）
+  - 兼容旧命名：`/static/epub/<external_id>/en.epub` 仍可访问
 - `data/logs/`：所有 launchd/job 的日志
 
 ### 4.2 主要数据表（概念级）
@@ -170,6 +174,11 @@ HF_DATE=2026-02-03 \
 - `PAPERTOK_LANGS=zh,en`：启用双语生成（影响 one-liner/explain/caption/images）
 - `PAPER_IMAGES_DISPLAY_PROVIDER` + `PAPER_IMAGES_GENERATE_ONLY_DISPLAY=1`：只生成展示用 provider（控成本）
 - `IMAGE_CAPTION_CONCURRENCY`：图注任务内部并发（需根据 `localhost:3003` 的限流调参）
+- EPUB（可选）：
+  - `RUN_EPUB=1`：在 daily 流水线末尾自动生成 EPUB（默认 EN 原文版）
+  - `EPUB_MAX=200`：daily 单次最多处理的论文数（建议大于“当天 DB paper 最大可能数”）
+  - `EPUB_OUT_ROOT`：EPUB 落盘目录（通常指向 `shared/data/epub`）
+  - `PANDOC_BIN`：pandoc 路径（launchd 环境建议写绝对路径，如 `/opt/homebrew/bin/pandoc`）
 
 ### 5.3 DB Config（Admin 可改）
 `GET/PUT /api/admin/config` 当前可调整：
@@ -194,6 +203,9 @@ HF_DATE=2026-02-03 \
     - `lang=zh` 时只要求中文链路齐全
 - `GET /api/papers/{id}?lang=zh|en|both`
   - 详情会按 `lang` 返回对应语言的 one-liner / explain / captions / generated images（以及 MinerU markdown/抽图等）
+  - 若已生成 EPUB，会返回：
+    - `epub_url_en`（当前实现的 canonical EN 版，例如：`/static/epub/2602.04705/2602.04705.en.epub`）
+    - `epub_url`（预留：未来可能作为“当前语言最佳版”的统一入口）
 
 ### 6.3 状态与运维观测
 - **Public（可公开）**
@@ -230,6 +242,7 @@ HF_DATE=2026-02-03 \
 5) explain：生成讲解（`content_explain` / `content_explain_en`）
 6) caption：抽图图注（`image_captions_json` / `image_captions_en_json`，带 markdown 上下文窗口）
 7) paper_images：按语言生成竖屏配图（`paper_images.lang in {zh,en}`；可配置只生成 display provider 以控成本）
+8) epub（可选）：将 MinerU markdown 打包为 EPUB3（默认 EN 原文版）；产物挂载 `/static/epub`
 
 ### 7.2 事件体系（paper_events）
 - 每个 stage 会写 started/success/failed
@@ -264,6 +277,10 @@ HF_DATE=2026-02-03 \
   - `paper_images_scoped`：补齐缺失生成图
   - `paper_images_regen_scoped`：wipe+重生成生成图
   - （legacy）`paper_images_glm_backfill`：全库补齐 GLM 生图（成本高，谨慎）
+
+- EPUB（电子书）
+  - `epub_build_scoped`：补齐缺失 EPUB（默认不覆盖已有）
+  - `epub_build_regen_scoped`：重生成 EPUB（覆盖已有）
 
 - observability / repair
   - `paper_events_backfill`：为当前 DB 状态补齐 paper_events 标记（skipped/success）

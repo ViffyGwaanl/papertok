@@ -48,6 +48,15 @@ class Paper(SQLModel, table=True):
     image_captions_json: Optional[str] = None  # zh
     image_captions_en_json: Optional[str] = None  # en
 
+    # EPUB artifacts (stored under EPUB_OUT_ROOT and served via /static/epub)
+    epub_path_en: Optional[str] = None
+    epub_url_en: Optional[str] = None
+    # Future: translated / bilingual editions (next PR)
+    epub_path_zh: Optional[str] = None
+    epub_url_zh: Optional[str] = None
+    epub_path_bilingual: Optional[str] = None
+    epub_url_bilingual: Optional[str] = None
+
     meta_json: Optional[str] = None
 
     content_sha256: Optional[str] = Field(default=None, index=True)

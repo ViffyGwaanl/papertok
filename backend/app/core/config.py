@@ -226,5 +226,18 @@ class Settings(BaseModel):
     # GLM-Image supports max 2048px; use portrait 9:16 under that cap.
     paper_glm_image_size: str = os.getenv("PAPER_GLM_IMAGE_SIZE", "1088x1920")
 
+    # EPUB generation (pandoc)
+    run_epub: bool = os.getenv("RUN_EPUB", "").lower() in {"1", "true", "yes"}
+    epub_max: int = int(os.getenv("EPUB_MAX", "10"))
+    epub_out_root: str = os.getenv(
+        "EPUB_OUT_ROOT",
+        str(_PAPERTOK_ROOT / "data" / "epub"),
+    )
+    pandoc_bin: str = os.getenv("PANDOC_BIN", "pandoc")
+    epub_css_path: str = os.getenv(
+        "EPUB_CSS_PATH",
+        str(_PAPERTOK_ROOT / "backend" / "app" / "static" / "epub.css"),
+    )
+
 
 settings = Settings()
