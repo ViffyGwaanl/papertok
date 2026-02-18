@@ -163,6 +163,10 @@ Common keys (excerpt):
 - `PAPERTOK_LANGS=zh,en`
 - `PAPER_IMAGES_DISPLAY_PROVIDER` + `PAPER_IMAGES_GENERATE_ONLY_DISPLAY=1`
 - `IMAGE_CAPTION_CONCURRENCY`
+- MinerU garbled-symbol fix (optional, recommended for production):
+  - `MINERU_OCR_FALLBACK=1`: when `txt` extraction produces many garbled symbols like `???`, automatically re-parse via OCR and merge back into the `txt` output (keeps URL paths stable)
+  - `MINERU_OCR_QMARKS_THRESHOLD=80`: total `?` threshold to trigger fallback
+  - `MINERU_OCR_QMARKS_PER_K_THRESHOLD=1.0`: normalized threshold by text length
 - EPUB (optional):
   - `RUN_EPUB=1`: generate EPUBs at the end of the daily pipeline (currently EN original edition)
   - `EPUB_MAX=200`: per-run cap (set it higher than the max expected papers per day)
@@ -234,6 +238,7 @@ Supported job types (excerpt):
 - `image_caption_scoped`, `image_caption_regen_scoped`
 - `paper_images_scoped`, `paper_images_regen_scoped`
 - `epub_build_scoped`, `epub_build_regen_scoped`
+- `mineru_ocr_fix_scoped`, `mineru_ocr_fix_regen_scoped`
 - `paper_events_backfill`
 - `paper_retry_stage`
 

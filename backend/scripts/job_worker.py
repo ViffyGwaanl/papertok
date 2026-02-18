@@ -93,6 +93,18 @@ SUPPORTED: dict[str, list[str]] = {
         "scripts.job_handlers.epub_build",
     ],
 
+    # mineru fixes
+    "mineru_ocr_fix_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.mineru_ocr_fix",
+    ],
+    "mineru_ocr_fix_regen_scoped": [
+        str(BACKEND_DIR / ".venv" / "bin" / "python"),
+        "-m",
+        "scripts.job_handlers.mineru_ocr_fix",
+    ],
+
     # per-paper retry
     "paper_retry_stage": [
         str(BACKEND_DIR / ".venv" / "bin" / "python"),
@@ -210,6 +222,8 @@ def _execute_job(job_id: int, job_type: str, log_path: Path) -> None:
         "paper_images_regen_scoped",
         "epub_build_scoped",
         "epub_build_regen_scoped",
+        "mineru_ocr_fix_scoped",
+        "mineru_ocr_fix_regen_scoped",
         "paper_retry_stage",
     }:
         with Session(engine) as session:

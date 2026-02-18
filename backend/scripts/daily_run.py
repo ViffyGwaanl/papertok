@@ -378,10 +378,23 @@ def run_mineru_for_pending(
                     table=False,
                 )
 
+            def _try_parse_ocr(pdf_in: str):
+                return run_mineru_pdf_to_md(
+                    pdf_path=pdf_in,
+                    out_root=settings.mineru_out_root,
+                    model_source=settings.mineru_model_source,
+                    backend="pipeline",
+                    method="ocr",
+                    lang="en",
+                    formula=False,
+                    table=False,
+                )
+
             # Attempt 1: original PDF
+            pdf_used = str(p.pdf_path)
             first_err: Exception | None = None
             try:
-                res = _try_parse(p.pdf_path)
+                res = _try_parse(pdf_used)
             except Exception as e1:
                 first_err = e1
                 # create a dummy result-like object so code below can proceed
@@ -427,19 +440,65 @@ def run_mineru_for_pending(
                 # Attempt 2: repaired cache copy (if exists)
                 if repaired_pdf.exists() and repaired_pdf.stat().st_size >= 1024:
                     print(f"MINERU_RETRY: {p.external_id} using repaired PDF -> parsing...")
-                    res = _try_parse(str(repaired_pdf))
+                    pdf_used = str(repaired_pdf)
+                    res = _try_parse(pdf_used)
 
             if res.md_path.exists():
+                # Optional: OCR fallback when txt extraction produces many garbled symbols (e.g. '???').
+                try:
+                    if settings.mineru_ocr_fallback:
+                        from app.services.mineru_quality import measure_md_quality, is_garbled
+                        from app.services.mineru_fallback import merge_mineru_outputs
+
+                        q0 = measure_md_quality(res.md_path)
+                        bad = is_garbled(
+                            q0,
+                            qmarks_threshold=int(settings.mineru_ocr_qmarks_threshold),
+                            qmarks_per_k_threshold=float(settings.mineru_ocr_qmarks_per_k_threshold),
+                        )
+                        if bad:
+                            print(
+                                f"MINERU_FALLBACK_OCR: {p.external_id} qmarks={q0.qmarks} "
+                                f"per_k={q0.qmarks_per_k:.2f} -> reparse via ocr"
+                            )
+                            ocr_res = _try_parse_ocr(pdf_used)
+                            # NOTE: keep stable URL paths by merging OCR result into txt output.
+                            merged = merge_mineru_outputs(dst=res, src=ocr_res)
+                            q1 = measure_md_quality(res.md_path)
+                            print(
+                                f"MINERU_FALLBACK_OCR_DONE: {p.external_id} qmarks {q0.qmarks}->{q1.qmarks} "
+                                f"copied_images={merged.get('copied_images')}"
+                            )
+                except Exception as e:
+                    print(f"WARN: MINERU_FALLBACK_OCR failed for {p.external_id}: {e}")
+
                 p.raw_text_path = str(res.md_path)
                 p.updated_at = datetime.utcnow()
                 session.add(p)
                 session.commit()
+
+                meta = {"md_path": str(res.md_path)}
+                try:
+                    from app.services.mineru_quality import measure_md_quality
+
+                    q = measure_md_quality(res.md_path)
+                    meta.update(
+                        {
+                            "qmarks": int(q.qmarks),
+                            "qmarks_per_k": float(q.qmarks_per_k),
+                            "qruns": int(q.qruns),
+                            "max_run": int(q.max_run),
+                        }
+                    )
+                except Exception:
+                    pass
+
                 record_paper_event(
                     session,
                     paper_id=p.id,
                     stage="mineru",
                     status="success",
-                    meta={"md_path": str(res.md_path)},
+                    meta=meta,
                 )
                 print(f"MINERU_OK: {p.external_id} -> {res.md_path}")
             else:

@@ -55,6 +55,10 @@ SUPPORTED_JOB_TYPES = {
     "epub_build_scoped": "Build EPUB (pandoc) for a scoped set (fill missing)",
     "epub_build_regen_scoped": "Build EPUB (pandoc) for a scoped set (overwrite)",
 
+    # mineru fixes (garbled symbols -> OCR fallback)
+    "mineru_ocr_fix_scoped": "Fix garbled symbols by reparsing with OCR and merging into txt output (only when needed)",
+    "mineru_ocr_fix_regen_scoped": "Fix garbled symbols by reparsing with OCR and merging into txt output (force)",
+
     # per-paper retry
     "paper_retry_stage": "Retry one pipeline stage for a specific paper (pdf/mineru/explain/caption/paper_images)",
 }

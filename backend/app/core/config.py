@@ -40,6 +40,11 @@ class Settings(BaseModel):
     mineru_model_source: str = os.getenv("MINERU_MODEL_SOURCE", "modelscope")
     mineru_max: int = int(os.getenv("MINERU_MAX", "2"))
 
+    # MinerU fallback strategy for garbled symbols (e.g. many '???' in scientific PDFs)
+    mineru_ocr_fallback: bool = os.getenv("MINERU_OCR_FALLBACK", "").lower() in {"1", "true", "yes"}
+    mineru_ocr_qmarks_threshold: int = int(os.getenv("MINERU_OCR_QMARKS_THRESHOLD", "80"))
+    mineru_ocr_qmarks_per_k_threshold: float = float(os.getenv("MINERU_OCR_QMARKS_PER_K_THRESHOLD", "1.0"))
+
     # Optional: attempt PDF repair (into a cache copy) when MinerU fails to parse.
     mineru_repair_on_fail: bool = os.getenv("MINERU_REPAIR_ON_FAIL", "1").lower() in {
         "1",

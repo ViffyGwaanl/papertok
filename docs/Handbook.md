@@ -174,6 +174,11 @@ HF_DATE=2026-02-03 \
 - `PAPERTOK_LANGS=zh,en`：启用双语生成（影响 one-liner/explain/caption/images）
 - `PAPER_IMAGES_DISPLAY_PROVIDER` + `PAPER_IMAGES_GENERATE_ONLY_DISPLAY=1`：只生成展示用 provider（控成本）
 - `IMAGE_CAPTION_CONCURRENCY`：图注任务内部并发（需根据 `localhost:3003` 的限流调参）
+- MinerU 公式/符号乱码修复（可选，推荐生产开启）：
+  - `MINERU_OCR_FALLBACK=1`：当 `txt` 抽取结果出现大量 `???`（符号丢失）时，自动改用 OCR 重跑并把结果合并回 `txt` 输出（保持 URL 稳定）
+  - `MINERU_OCR_QMARKS_THRESHOLD=80`：触发 OCR fallback 的 `?` 总数阈值（经验值，可按库内分布调参）
+  - `MINERU_OCR_QMARKS_PER_K_THRESHOLD=1.0`：按文本长度归一化的阈值（避免短文误判）
+
 - EPUB（可选）：
   - `RUN_EPUB=1`：在 daily 流水线末尾自动生成 EPUB（默认 EN 原文版）
   - `EPUB_MAX=200`：daily 单次最多处理的论文数（建议大于“当天 DB paper 最大可能数”）
@@ -277,6 +282,10 @@ HF_DATE=2026-02-03 \
   - `paper_images_scoped`：补齐缺失生成图
   - `paper_images_regen_scoped`：wipe+重生成生成图
   - （legacy）`paper_images_glm_backfill`：全库补齐 GLM 生图（成本高，谨慎）
+
+- MinerU OCR 修复（符号乱码 / ???）
+  - `mineru_ocr_fix_scoped`：当 MinerU `txt` 输出出现大量 `?` 时，用 OCR 重跑并合并回 `txt` 输出（保持 URL 稳定）；可选 `regen_epub=1` 自动重建 EPUB
+  - `mineru_ocr_fix_regen_scoped`：强制 OCR 重跑并合并（覆盖 md 内容）
 
 - EPUB（电子书）
   - `epub_build_scoped`：补齐缺失 EPUB（默认不覆盖已有）
