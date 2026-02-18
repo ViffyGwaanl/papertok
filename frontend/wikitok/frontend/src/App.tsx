@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { t } from "./lib/i18n";
 import { WikiCard } from "./components/WikiCard";
+import { PaperDetailModal } from "./components/PaperDetailModal";
 import { AdminPage } from "./components/AdminPage";
 import { Loader2, Search, X, Download } from "lucide-react";
 // (Removed @vercel/analytics for local PaperTok deployment)
@@ -23,6 +24,61 @@ function MainPage() {
 
   const { articles, loading, offlineMode, fetchArticles, setArticles } = useWikiArticles({ lang: contentLang });
   const { likedArticles, toggleLike } = useLikedArticles();
+
+  // Lightweight in-app navigation: /?paper=<id>&lang=<zh|en>
+  const [routePaperId, setRoutePaperId] = useState<number | null>(null);
+  const [routePaperTitle, setRoutePaperTitle] = useState<string | undefined>(undefined);
+
+  const _applyRouteFromUrl = useCallback(() => {
+    const params = new URLSearchParams(window.location.search || '');
+    const raw = (params.get('paper') || '').trim();
+    const pid = raw ? Number.parseInt(raw, 10) : NaN;
+    setRoutePaperId(Number.isFinite(pid) ? pid : null);
+    setRoutePaperTitle(undefined);
+
+    const qLang = (params.get('lang') || '').toLowerCase();
+    if (qLang === 'zh' || qLang === 'en') {
+      setContentLang(qLang as any);
+    }
+  }, []);
+
+  useEffect(() => {
+    _applyRouteFromUrl();
+    window.addEventListener('popstate', _applyRouteFromUrl);
+    return () => window.removeEventListener('popstate', _applyRouteFromUrl);
+  }, [_applyRouteFromUrl]);
+
+  const openPaperRoute = useCallback((paperId: number, title?: string) => {
+    const params = new URLSearchParams(window.location.search || '');
+    params.set('paper', String(paperId));
+    params.set('lang', contentLang);
+    const qs = params.toString();
+    const url = qs ? `/?${qs}` : '/';
+    window.history.pushState({}, '', url);
+    setRoutePaperId(paperId);
+    setRoutePaperTitle(title);
+  }, [contentLang]);
+
+  const closePaperRoute = useCallback(() => {
+    const params = new URLSearchParams(window.location.search || '');
+    params.delete('paper');
+    params.delete('lang');
+    const qs = params.toString();
+    const url = qs ? `/?${qs}` : '/';
+    window.history.pushState({}, '', url);
+    setRoutePaperId(null);
+    setRoutePaperTitle(undefined);
+  }, []);
+
+  // Keep URL lang in sync when the route modal is open.
+  useEffect(() => {
+    if (!routePaperId) return;
+    const params = new URLSearchParams(window.location.search || '');
+    params.set('paper', String(routePaperId));
+    params.set('lang', contentLang);
+    const qs = params.toString();
+    window.history.replaceState({}, '', qs ? `/?${qs}` : '/');
+  }, [routePaperId, contentLang]);
   const observerTarget = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -201,7 +257,7 @@ function MainPage() {
                 <div className="space-y-4">
                   {filteredLikedArticles.map((article) => (
                     <div
-                      key={`${article.pageid}-${Date.now()}`}
+                      key={article.pageid}
                       className="flex gap-4 items-start group"
                     >
                       {article.thumbnail && (
@@ -213,14 +269,17 @@ function MainPage() {
                       )}
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
-                          <a
-                            href={article.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-bold hover:text-gray-200"
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowLikes(false);
+                              openPaperRoute(article.pageid, article.displaytitle || article.title);
+                            }}
+                            className="font-bold hover:text-gray-200 text-left"
+                            title={t(contentLang, 'page')}
                           >
                             {article.title}
-                          </a>
+                          </button>
                           <button
                             onClick={() => toggleLike(article)}
                             className="text-white/50 hover:text-white/90 p-1 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
@@ -246,6 +305,14 @@ function MainPage() {
           ></div>
         </div>
       )}
+
+      <PaperDetailModal
+        open={!!routePaperId}
+        paperId={routePaperId || 0}
+        lang={contentLang}
+        fallbackTitle={routePaperTitle}
+        onClose={closePaperRoute}
+      />
 
       {articles.map((article) => (
         <WikiCard key={article.pageid} article={article} lang={contentLang} />
